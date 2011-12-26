@@ -43,18 +43,9 @@ if sys.platform != "win32":
 if sys.platform == "win32":
     libs.append("ws2_32")
 
-shutil.copy("../Client.h", "./")
-shutil.copy("../mcdefs.h", "./")
-shutil.copy("../PacketWriter.h", "./")
-shutil.copy("../PacketReader.h", "./")
-shutil.copy("../socketdefs.h", "./")
-shutil.copy("../PacketWriter.cpp", "./")
-shutil.copy("../PacketReader.cpp", "./")
-shutil.copy("../Client.cpp", "./")
-
 module1 = Extension('umemcached',
-                sources = ['umemcached.cpp', 'PacketReader.cpp', 'PacketWriter.cpp', 'Client.cpp'],
-                include_dirs = ['./'],
+                sources = ['umemcached.cpp', 'src/PacketReader.cpp', 'src/PacketWriter.cpp', 'src/Client.cpp'],
+                include_dirs = ['src/'],
                 library_dirs = [],
                 libraries=libs,
                 define_macros=[('WIN32_LEAN_AND_MEAN', None)])
