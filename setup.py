@@ -51,7 +51,7 @@ module1 = Extension('umemcached',
                 define_macros=[('WIN32_LEAN_AND_MEAN', None)])
 					
 setup (name = 'umemcached',
-       version = '1.0',
+       version = '1.1',
        description = '',
        ext_modules = [module1])
        

@@ -125,7 +125,7 @@ bool Client::sendWriteBuffer(void)
       return false;
     }
     else
-    if (result == 0)
+    if (bytesSent == 0)
     {
       setError("Connection reset by peer");
       return false;

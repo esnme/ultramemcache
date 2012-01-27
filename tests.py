@@ -37,7 +37,6 @@ import time
 import datetime
 import logging
 import unittest
-import gevent
 import random
 from umemcached import Client
 

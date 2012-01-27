@@ -56,13 +56,11 @@ typedef struct {
   PyObject *sock;
   PyObject *host;
   int port;
-  SOCKET sockfd;
 } PyClient;
 
 int API_send(SOCKETDESC *desc, void *data, size_t cbData)
 {
   PyClient *client = (PyClient *) desc->prv;
-  int result;
 
   if (client == NULL)
   {
@@ -77,8 +75,8 @@ int API_send(SOCKETDESC *desc, void *data, size_t cbData)
   int ret;
 
   funcStr = PyString_FromString("send");
-  pybuffer = PyString_FromStringAndSize(data, cbData);
-  res = PyObject_CallMethodObjArgs ((PyObject *) sock, funcStr, pybuffer, NULL);
+  pybuffer = PyString_FromStringAndSize( (char *) data, cbData);
+  res = PyObject_CallMethodObjArgs (client->sock, funcStr, pybuffer, NULL);
   Py_DECREF(funcStr);
   Py_DECREF(pybuffer);
 
@@ -111,7 +109,7 @@ int API_recv(SOCKETDESC *desc, void *data, size_t cbMaxData)
 
   funcStr = PyString_FromString("recv");
   bufSize = PyInt_FromLong(cbMaxData);
-  res = PyObject_CallMethodObjArgs ((PyObject *) sock, funcStr, bufSize, NULL);
+  res = PyObject_CallMethodObjArgs (client->sock, funcStr, bufSize, NULL);
   Py_DECREF(funcStr);
   Py_DECREF(bufSize);
 
@@ -226,145 +224,7 @@ void *API_createSocket(int family, int type, int proto)
   return sockobj;
 }
 
-int API_getSocketFD(void *sock)
-{
-  int ret;
-  PyObject *fdobj;
-  PRINTMARK();
 
-  fdobj = PyObject_CallMethod ((PyObject *) sock, "fileno", NULL);
-  PRINTMARK();
-
-  if (fdobj == NULL)
-  {
-    PRINTMARK();
-    return -1;
-  }
-
-  if (!PyInt_Check(fdobj))
-  {
-    Py_XDECREF(fdobj);
-    PRINTMARK();
-    return -1;
-  }
-
-  ret = PyInt_AS_LONG(fdobj);
-
-  Py_DECREF(fdobj);
-  return ret;
-}
-
-void API_closeSocket(void *sock)
-{
-  PyObject *res = PyObject_CallMethod( (PyObject *) sock, "close", NULL);
-
-  if (res == NULL)
-  {
-    PRINTMARK();
-    return;
-  }
-
-  Py_DECREF(res);
-}
-
-void API_deleteSocket(void *sock)
-{
-  Py_DECREF( (PyObject *) sock);
-}
-
-/*
-For gevent
-*/
-
-
-int API_wouldBlock_gevent(void *sock, int fd, int ops, int timeout)
-{
-  /* Setup gevent and yield to gevent hub */
-
-  static int once = 1;
-  static PyObject *sockmodule = NULL;
-  static PyObject *waitread = NULL;
-  static PyObject *waitwrite = NULL;
-
-  PyObject *resObject = NULL;
-  PyObject *argList;
-  PyObject *kwargList;
-
-  if (once)
-  {
-    /*FIXME: References for module, class or methods are never released */
-    sockmodule = PyImport_ImportModule ("gevent.socket");
-
-    if (sockmodule == NULL)
-    {
-      PRINTMARK();
-      return -1;
-    }
-
-    waitread = PyObject_GetAttrString(sockmodule, "wait_read");
-    waitwrite = PyObject_GetAttrString(sockmodule, "wait_write");
-
-    if (waitread == NULL || waitwrite == NULL)
-    {
-      PRINTMARK();
-      return -1;
-    }
-
-    if (!PyFunction_Check(waitread) || !PyFunction_Check(waitwrite))
-    {
-      PRINTMARK();
-      return -1;
-    }
-
-    PRINTMARK();
-    once = 0;
-  }
-
-
-  PRINTMARK();
-  //FIXME: do this once
-  argList = PyTuple_New(1);
-  PyTuple_SET_ITEM(argList, 0, PyInt_FromLong(fd));
-  kwargList = PyDict_New();
-  PyDict_SetItemString(kwargList, "timeout", PyInt_FromLong(timeout));
-
-  PRINTMARK();
-
-  switch (ops)
-  {
-  case 1:
-    PRINTMARK();
-
-    resObject = PyObject_Call (waitread, argList, kwargList);
-    PRINTMARK();
-    break;
-
-  case 2:
-    PRINTMARK();
-    resObject = PyObject_Call (waitwrite, argList, kwargList);
-    PRINTMARK();
-    break;
-  }
-
-  Py_DECREF(argList);
-  Py_DECREF(kwargList);
-
-  if (resObject == NULL)
-  {
-    if (!PyErr_Occurred())
-    {
-      PyErr_Format(PyExc_RuntimeError, "umemcached: Python exception not set for operation %d", ops);
-    }
-    PRINTMARK();
-    return 0;
-  }
-
-  PRINTMARK();
-  Py_DECREF(resObject);
-  PRINTMARK();
-
-  return 1;
-}
 
 int Client_init(PyClient *self, PyObject *args)
 {
@@ -403,7 +263,6 @@ int Client_init(PyClient *self, PyObject *args)
   PRINTMARK();
   self->sock = (PyObject *) API_createSocket(AF_INET, SOCK_STREAM, 0);
   PRINTMARK();
-  self->sockfd = API_getSocketFD(self->sock);
 
   self->desc.prv = self;
   self->desc.connect = API_connect;
@@ -1124,6 +983,7 @@ static PyTypeObject ClientType = {
   0,				/* tp_traverse       */
   0,				/* tp_clear          */
   0,				/* tp_richcompare    */
+  0,				/* tp_weaklistoffset    */
   0,				/* tp_iter           */
   0,				/* tp_iternext       */
   Client_methods,	     		/* tp_methods        */
