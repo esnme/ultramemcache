@@ -5,16 +5,16 @@ All rights reserved.
 Redistribution and use in source and binary forms, with or without
 modification, are permitted provided that the following conditions are met:
 1. Redistributions of source code must retain the above copyright
-   notice, this list of conditions and the following disclaimer.
+notice, this list of conditions and the following disclaimer.
 2. Redistributions in binary form must reproduce the above copyright
-   notice, this list of conditions and the following disclaimer in the
-   documentation and/or other materials provided with the distribution.
+notice, this list of conditions and the following disclaimer in the
+documentation and/or other materials provided with the distribution.
 3. All advertising materials mentioning features or use of this software
-   must display the following acknowledgement:
-   This product includes software developed by ESN Social Software AB (www.esn.me).
+must display the following acknowledgement:
+This product includes software developed by ESN Social Software AB (www.esn.me).
 4. Neither the name of the ESN Social Software AB nor the
-   names of its contributors may be used to endorse or promote products
-   derived from this software without specific prior written permission.
+names of its contributors may be used to endorse or promote products
+derived from this software without specific prior written permission.
 
 THIS SOFTWARE IS PROVIDED BY ESN SOCIAL SOFTWARE AB ''AS IS'' AND ANY
 EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
@@ -36,35 +36,35 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 class PacketReader
 {
 private:
-	char *m_buffStart;
-	char *m_buffEnd;
-	char *m_readCursor;
-	char *m_writeCursor;
-	char *m_packetEnd;
+  char *m_buffStart;
+  char *m_buffEnd;
+  char *m_readCursor;
+  char *m_writeCursor;
+  char *m_packetEnd;
 
 public:
 
-	PacketReader (size_t cbSize);
-	~PacketReader (void);
+  PacketReader (size_t cbSize);
+  ~PacketReader (void);
 
-	void reset();
-	void skip();
-	void push(size_t _cbData);
-	char *getReadPtr();
-	char *getWritePtr();
-	char *getStartPtr();
-	char *getEndPtr();
-	void setEndPtr (char *ptr);
-	size_t getSize();
-	bool haveLine();
-	
-	UINT8 *readUntil(size_t *_outLen, char value);
-	UINT8 *readBytes(size_t cbsize);
+  void reset();
+  void skip();
+  void push(size_t _cbData);
+  char *getReadPtr();
+  char *getWritePtr();
+  char *getStartPtr();
+  char *getEndPtr();
+  void setEndPtr (char *ptr);
+  size_t getSize();
+  bool haveLine();
 
-	bool readNumeric (UINT64 *value);
+  UINT8 *readUntil(size_t *_outLen, char value);
+  UINT8 *readBytes(size_t cbsize);
 
-	size_t getBytesLeft();
-	void rewind(size_t num);
+  bool readNumeric (UINT64 *value);
+
+  size_t getBytesLeft();
+  void rewind(size_t num);
 };
 
 #endif
