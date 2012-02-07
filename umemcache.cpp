@@ -420,7 +420,7 @@ PyObject *Client_get(PyClient *self, PyObject *args)
     {
       if (!PyErr_Occurred())
       {
-        return PyErr_Format(PyExc_RuntimeError, "umemcached: %s", self->client->getError());
+        return PyErr_Format(PyExc_RuntimeError, "umemcache: %s", self->client->getError());
       }
       return NULL;
     }
@@ -443,7 +443,7 @@ PyObject *Client_get(PyClient *self, PyObject *args)
 
     if (!PyErr_Occurred())
     {
-      return PyErr_Format(PyExc_RuntimeError, "umemcached: %s", self->client->getError());
+      return PyErr_Format(PyExc_RuntimeError, "umemcache: %s", self->client->getError());
     }
 
     return NULL;
@@ -481,7 +481,7 @@ PyObject *Client_gets(PyClient *self, PyObject *args)
     {
       if (!PyErr_Occurred())
       {
-        return PyErr_Format(PyExc_RuntimeError, "umemcached: %s", self->client->getError());
+        return PyErr_Format(PyExc_RuntimeError, "umemcache: %s", self->client->getError());
       }
       return NULL;
     }
@@ -508,7 +508,7 @@ PyObject *Client_gets(PyClient *self, PyObject *args)
 
     if (!PyErr_Occurred())
     {
-      return PyErr_Format(PyExc_RuntimeError, "umemcached: %s", self->client->getError());
+      return PyErr_Format(PyExc_RuntimeError, "umemcache: %s", self->client->getError());
     }
 
     return NULL;
@@ -589,7 +589,7 @@ PyObject *Client_get_multi(PyClient *self, PyObject *okeys)
 
     if (!PyErr_Occurred())
     {
-      return PyErr_Format(PyExc_RuntimeError, "umemcached: %s", self->client->getError());
+      return PyErr_Format(PyExc_RuntimeError, "umemcache: %s", self->client->getError());
     }
 
     return NULL;
@@ -672,7 +672,7 @@ PyObject *Client_gets_multi(PyClient *self, PyObject *okeys)
 
     if (!PyErr_Occurred())
     {
-      return PyErr_Format(PyExc_RuntimeError, "umemcached: %s", self->client->getError());
+      return PyErr_Format(PyExc_RuntimeError, "umemcache: %s", self->client->getError());
     }
 
     return NULL;
@@ -702,7 +702,7 @@ PyObject *Client_delete(PyClient *self, PyObject *args)
   {
     if (!PyErr_Occurred())
     {
-      return PyErr_Format(PyExc_RuntimeError, "umemcached: %s", self->client->getError());
+      return PyErr_Format(PyExc_RuntimeError, "umemcache: %s", self->client->getError());
     }
 
     return NULL;
@@ -749,7 +749,7 @@ PyObject *Client_cas(PyClient *self, PyObject *args)
   {
     if (!PyErr_Occurred())
     {
-      return PyErr_Format(PyExc_RuntimeError, "umemcached: %s", self->client->getError());
+      return PyErr_Format(PyExc_RuntimeError, "umemcache: %s", self->client->getError());
     }
 
     return NULL;
@@ -791,7 +791,7 @@ PyObject *Client_incr(PyClient *self, PyObject *args)
   {
     if (!PyErr_Occurred())
     {
-      return PyErr_Format(PyExc_RuntimeError, "umemcached: %s", self->client->getError());
+      return PyErr_Format(PyExc_RuntimeError, "umemcache: %s", self->client->getError());
     }
 
     return NULL;
@@ -839,7 +839,7 @@ PyObject *Client_decr(PyClient *self, PyObject *args)
   {
     if (!PyErr_Occurred())
     {
-      return PyErr_Format(PyExc_RuntimeError, "umemcached: %s", self->client->getError());
+      return PyErr_Format(PyExc_RuntimeError, "umemcache: %s", self->client->getError());
     }
 
     return NULL;
@@ -960,7 +960,7 @@ static PyMethodDef Client_methods[] = {
 static PyTypeObject ClientType = {
   PyObject_HEAD_INIT(NULL)
   0,				/* ob_size        */
-  "umemcached.Client",		/* tp_name        */
+  "umemcache.Client",		/* tp_name        */
   sizeof(PyClient),		/* tp_basicsize   */
   0,				/* tp_itemsize    */
   (destructor) Client_Destructor,		/* tp_dealloc     */
@@ -1003,11 +1003,11 @@ static PyMethodDef methods[] = {
 
 
 PyMODINIT_FUNC
-  initumemcached(void)
+  initumemcache(void)
 {
   PyObject* m;
 
-  m = Py_InitModule3("umemcached", methods,
+  m = Py_InitModule3("umemcache", methods,
     "");
   if (m == NULL)
     return;

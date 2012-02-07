@@ -43,15 +43,15 @@ if sys.platform != "win32":
 if sys.platform == "win32":
     libs.append("ws2_32")
 
-module1 = Extension('umemcached',
-                sources = ['umemcached.cpp', 'src/PacketReader.cpp', 'src/PacketWriter.cpp', 'src/Client.cpp'],
+module1 = Extension('umemcache',
+                sources = ['umemcache.cpp', 'src/PacketReader.cpp', 'src/PacketWriter.cpp', 'src/Client.cpp'],
                 include_dirs = ['src/'],
                 library_dirs = [],
                 libraries=libs,
                 define_macros=[('WIN32_LEAN_AND_MEAN', None)])
 					
-setup (name = 'umemcached',
-       version = '1.1',
+setup (name = 'umemcache',
+       version = '1.2',
        description = '',
        ext_modules = [module1])
        

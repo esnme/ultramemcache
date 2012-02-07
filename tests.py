@@ -38,12 +38,12 @@ import datetime
 import logging
 import unittest
 import random
-from umemcached import Client
+from umemcache import Client
 
 MEMCACHED_ADDRESS = "127.0.0.1:11211"
 
-class Testumemcached(unittest.TestCase):
-    log = logging.getLogger('umemcached')
+class Testumemcache(unittest.TestCase):
+    log = logging.getLogger('umemcache')
 
     def testRandomData(self):
         def random_bytes(size):
