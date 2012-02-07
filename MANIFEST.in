@@ -1,3 +1,8 @@
-include tests.py
-include umemcache.cpp
-include src *.h *.cpp
+include tests\*.py
+include README
+include python\*.cpp
+include python\*.c
+include python\*.h
+include lib\*.cpp
+include lib\*.c
+include lib\*.h
