@@ -33,7 +33,13 @@ from distutils.core import setup, Extension
 import shutil
 import sys
 
-
+CLASSIFIERS = filter(None, map(str.strip,
+"""
+Intended Audience :: Developers
+License :: OSI Approved :: BSD License
+Programming Language :: Python
+Topic :: Software Development :: Libraries :: Python Modules
+""".splitlines()))
     
 libs = []
 
@@ -51,8 +57,17 @@ module1 = Extension('umemcache',
                 define_macros=[('WIN32_LEAN_AND_MEAN', None)])
 					
 setup (name = 'umemcache',
-       version = '1.2',
-       description = '',
-       ext_modules = [module1])
+       version = "1.2",
+       description = "Ultra fast memcache client written in highly optimized C++ with Python bindings",
+       ext_modules = [module1],
+       author="Jonas Tarnstrom",
+       author_email="jonas.tarnstrom@esn.me",
+       download_url="http://github.com/esnme/ultramemcache",
+       license="BSD License",
+       packages=['umemcache'],
+       platforms=['any'],	   
+	   url="http://www.esn.me",
+       classifiers=CLASSIFIERS,
+	   )
        
        
