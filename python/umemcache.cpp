@@ -151,7 +151,9 @@ int API_connect(SOCKETDESC *desc, const char *address, int port)
   PyObject *res = PyObject_CallMethodObjArgs(client->sock, method, args, NULL);
 
   PRINTMARK();
-  Py_DECREF(PyTuple_GET_ITEM(args, 1));
+
+  //PyTuple_SET_ITEM doesn't increment ref counter 
+  //Py_DECREF(PyTuple_GET_ITEM(args, 1));
   Py_DECREF(args);
   Py_DECREF(method);
 
