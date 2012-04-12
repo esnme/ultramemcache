@@ -144,6 +144,8 @@ int API_connect(SOCKETDESC *desc, const char *address, int port)
   PRINTMARK();
 
   PyObject *args = PyTuple_New(2);
+  //Increment client->host before dropping into tuple
+  Py_INCREF(client->host);
   PyTuple_SET_ITEM(args, 0, client->host);
   PyTuple_SET_ITEM(args, 1, PyInt_FromLong(client->port));
   PyObject *method = PyString_FromString("connect");
