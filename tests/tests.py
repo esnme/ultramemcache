@@ -45,6 +45,14 @@ MEMCACHED_ADDRESS = "127.0.0.1:11211"
 class Testumemcache(unittest.TestCase):
     log = logging.getLogger('umemcache')
 
+    def testTupleRefCrashFix(self):
+        client = Client(MEMCACHED_ADDRESS)
+        for i in range(1000):
+            try:
+                client.connect()
+            except:
+                pass    
+    
     def testRandomData(self):
         def random_bytes(size):
             return "".join(chr(random.randrange(0, 256)) for i in xrange(size))
