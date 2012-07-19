@@ -481,6 +481,43 @@ bool Client::getStats(char **pName, size_t *cbName, char **pArg, size_t *cbArg)
 }
 
 
+bool Client::flushAll(time_t *expiration, bool async)
+{
+  m_writer.writeChars("flush_all ", 9);
+
+  if (expiration)
+  {
+    m_writer.writeChar(' ');
+    m_writer.writeNumeric(*expiration);
+  }
+
+  if (async)
+  {
+    m_writer.writeChars(" noreply", 8);
+  }
+
+  m_writer.writeChars("\r\n", 2);
+
+  if (!sendWriteBuffer())
+  {
+    return false;
+  }
+
+  if (async)
+  {
+    return true;
+  }
+
+  if (!readLine())
+  {
+    return false;
+  }
+
+  return true;
+}
+
+
+
 bool Client::getReadNext(char **key, size_t *cbKey, char **data, size_t *cbData, int *_flags, UINT64 *_cas, bool *bError)
 {
   *bError = false;
