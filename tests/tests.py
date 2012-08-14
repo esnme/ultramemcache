@@ -337,6 +337,14 @@ class Testumemcache(unittest.TestCase):
 
         c.disconnect();
         pass
+
+    def testFlushAll(self):
+        c = Client(MEMCACHED_ADDRESS);
+        c.connect();
+        c.set("key1", "31337")
+        self.assertEquals(c.get("key1")[0], "31337")
+        c.flush_all()
+        self.assertEquals(c.get("key1"), None)
     
 if __name__ == '__main__':
     unittest.main()
