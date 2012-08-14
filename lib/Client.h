@@ -86,6 +86,7 @@ public:
   bool version(char **version, size_t *cbVersion);
   bool stats(const char *arg, size_t cbArg);
   bool getStats(char **pName, size_t *cbName, char **pArg, size_t *cbArg);
+  bool flushAll(time_t *expiration, bool async);
   bool getResult(char **pData, size_t *cbSize);
   const char *getError(void);
 

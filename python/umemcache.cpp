@@ -909,6 +909,45 @@ PyObject *Client_stats(PyClient *self, PyObject *args)
   return odict;
 }
 
+PyObject *Client_flush_all(PyClient *self, PyObject *args)
+{
+  char *pResult;
+  size_t cbResult;
+  int expire = -1;
+  int async = 0;
+
+  if (!PyArg_ParseTuple (args, "|ib", &expire, &async))
+  {
+    return NULL;
+  }
+
+  time_t tsExpire = expire;
+
+  if (!self->client->flushAll((tsExpire == -1) ? NULL : (time_t *) &tsExpire, async ? true : false))
+  {
+    if (!PyErr_Occurred())
+    {
+      return PyErr_Format(PyExc_RuntimeError, "umemcache: %s", self->client->getError());
+    }
+
+    return NULL;
+  }
+
+  if (!async)
+  {
+    if (self->client->getResult(&pResult, &cbResult))
+    {
+      return PyString_FromStringAndSize(pResult, cbResult);
+    }
+    else
+    {
+      return PyErr_Format(PyExc_RuntimeError, "Could not retrieve result");
+    }
+  }
+
+  Py_RETURN_NONE;
+}
+
 
 
 
@@ -935,6 +974,8 @@ PyObject *Client_stats(PyClient *self, PyObject *args)
 [X] def version(self):
 [X] def stats(self):
 
+[X] def flush_all(self, expiration = 0, async = False):
+
 */
 
 
@@ -958,6 +999,7 @@ static PyMethodDef Client_methods[] = {
   {"decr", (PyCFunction)			Client_decr,			METH_VARARGS, "def decr(self, key, decrement, async = False)"},
   {"version", (PyCFunction)			Client_version,			METH_NOARGS, "def version(self)"},
   {"stats", (PyCFunction)		Client_stats, METH_NOARGS, "def stats(self)"},
+  {"flush_all", (PyCFunction)		Client_flush_all, METH_VARARGS, "def flush_all(self, expiration = 0, async = False)"},
   {NULL}
 };
 
