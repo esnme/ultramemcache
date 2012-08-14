@@ -57,7 +57,7 @@ module1 = Extension('umemcache',
                 define_macros=[('WIN32_LEAN_AND_MEAN', None)])
 					
 setup (name = 'umemcache',
-       version = "1.3",
+       version = "1.4",
        description = "Ultra fast memcache client written in highly optimized C++ with Python bindings",
        ext_modules = [module1],
        author="Jonas Tarnstrom",
