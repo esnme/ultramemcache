@@ -29,7 +29,8 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 """
 
 
-from distutils.core import setup, Extension
+from setuptools import setup
+from distutils.core import Extension
 import shutil
 import sys
 

@@ -38,9 +38,15 @@ import datetime
 import logging
 import unittest
 import random
+import socket
+import sys
 from umemcache import Client
 
-MEMCACHED_ADDRESS = "127.0.0.1:11211"
+
+MEMCACHED_HOST = "127.0.0.1"
+MEMCACHED_PORT = 11211
+MEMCACHED_ADDRESS = "%s:%d" % (MEMCACHED_HOST, MEMCACHED_PORT)
+
 
 class Testumemcache(unittest.TestCase):
     log = logging.getLogger('umemcache')
@@ -346,17 +352,32 @@ class Testumemcache(unittest.TestCase):
         c.flush_all()
         self.assertEquals(c.get("key1"), None)
 
-if __name__ == '__main__':
-    unittest.main()
+    def testSockAccess(self):
+        # accessing the members before connect() is called
+        c = Client(MEMCACHED_ADDRESS)
+        self.assertEquals(c.host, MEMCACHED_HOST)
+        self.assertEquals(c.port, MEMCACHED_PORT)
+        self.assertTrue(isinstance(c.sock, socket.socket))
+        c.sock.settimeout(2)
+        c.connect()
+        c.set("key1", "31337")
+        self.assertEquals(c.get("key1")[0], "31337")
 
-"""
+
 if __name__ == '__main__':
-    from guppy import hpy
-    hp = hpy()
-    hp.setrelheap()
-    while True:
+    leak = len(sys.argv) > 1 and sys.argv[-1] == '--leak'
+    if not leak:
         unittest.main()
-        heap = hp.heapu()
-        print heap
-"""
+    else:
+        try:
+            from guppy import hpy
+        except ImportError:
+            print('You need to install guppy')
+            sys.exit(0)
 
+        hp = hpy()
+        hp.setrelheap()
+        while True:
+            unittest.main()
+            heap = hp.heapu()
+            print heap
