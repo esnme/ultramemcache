@@ -369,6 +369,7 @@ if __name__ == '__main__':
     if not leak:
         unittest.main()
     else:
+        sys.argv = sys.argv[:-1]
         try:
             from guppy import hpy
         except ImportError:
