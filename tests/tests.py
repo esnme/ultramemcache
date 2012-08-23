@@ -378,7 +378,10 @@ if __name__ == '__main__':
 
         hp = hpy()
         hp.setrelheap()
+
         while True:
-            unittest.main()
-            heap = hp.heapu()
-            print heap
+            try:
+                unittest.main()
+            finally:
+                heap = hp.heapu()
+                print heap
