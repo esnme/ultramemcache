@@ -51,19 +51,19 @@ class Testumemcache(unittest.TestCase):
             try:
                 client.connect()
             except:
-                pass    
-    
+                pass
+
     def testRandomData(self):
         def random_bytes(size):
             return "".join(chr(random.randrange(0, 256)) for i in xrange(size))
-            
+
         def random_str(size):
             return "".join(chr(random.randrange(33, 64)) for i in xrange(size))
 
-            
+
         c = Client(MEMCACHED_ADDRESS);
         c.connect();
-        
+
         count = 0
 
         for x in xrange(0, 10):
@@ -71,13 +71,13 @@ class Testumemcache(unittest.TestCase):
             value = random_bytes(random.randrange(1, 5000))
             c.set(key, value, 0, 0, True)
             v2 = c.get(key)[0]
-            
+
             count += 1
 
             if len(value) != len(v2):
                 print "%d %d != %d" % (count, len(value), len(v2))
-            
-            #self.assertEquals(value, v2)    
+
+            #self.assertEquals(value, v2)
 
     def testBigDataFail(self):
     	c = Client(MEMCACHED_ADDRESS);
@@ -86,7 +86,7 @@ class Testumemcache(unittest.TestCase):
 
         for x in xrange(0, 10):
             v = c.get("kaka" + str(x))
-            c.set("fsdafbdsakjfjdkfjadklsafdsafdsaffdsafdasfdsafdasfsdafdsafdsafasdas" + str(x), data, 604830, 17, True)    
+            c.set("fsdafbdsakjfjdkfjadklsafdsafdsaffdsafdasfdsafdasfsdafdsafdsafasdas" + str(x), data, 604830, 17, True)
 
 
     def testIncrDecrString(self):
@@ -95,28 +95,28 @@ class Testumemcache(unittest.TestCase):
         c.set("test", "hej")
     	self.assertRaises(Exception, c.incr, "test", 1)
     	self.assertRaises(Exception, c.decr, "test", 5)
-    
-    
+
+
     def testSetExpiration(self):
     	c = Client(MEMCACHED_ADDRESS);
         c.connect();
     	c.set("test", "1", 60, 2)
-    
+
     def testSegfault(self):
         try:
             c = Client()
             assert False
         except(TypeError):
             pass
-        
+
 
     def testConnect(self):
         c = Client(MEMCACHED_ADDRESS);
         c.connect();
         self.assertEquals(True, c.is_connected());
         pass
-        
-        
+
+
     def testDisconnect(self):
         c = Client(MEMCACHED_ADDRESS);
         c.connect();
@@ -124,28 +124,28 @@ class Testumemcache(unittest.TestCase):
         self.assertEquals(False, c.is_connected());
         pass
 
-        
+
     def testClose(self):
         c = Client(MEMCACHED_ADDRESS);
         c.connect();
         c.close();
         self.assertEquals(False, c.is_connected());
         pass
-        
+
     def testConnectTwice(self):
         c = Client(MEMCACHED_ADDRESS);
         c.connect();
         c.disconnect();
         self.assertEquals(False, c.is_connected());
-        
+
         try:
             c.connect();
             assert False
         except (RuntimeError):
             pass
-        
+
         pass
-        
+
     def testConnectCloseQuery(self):
         c = Client(MEMCACHED_ADDRESS);
         c.connect();
@@ -155,7 +155,7 @@ class Testumemcache(unittest.TestCase):
             assert False
         except:
             pass
-            
+
 
     def testOversizedKey(self):
         c = Client(MEMCACHED_ADDRESS);
@@ -175,7 +175,7 @@ class Testumemcache(unittest.TestCase):
         self.assertEquals("value", c.get("key")[0])
         self.assertEquals(None, c.get("key23123"))
         pass
-            
+
     def testGets(self):
         c = Client(MEMCACHED_ADDRESS);
         c.connect();
@@ -186,7 +186,7 @@ class Testumemcache(unittest.TestCase):
         self.assertEquals(3, len(r))
         pass
 
-        
+
     def testSet(self):
         c = Client(MEMCACHED_ADDRESS);
         c.connect();
@@ -202,12 +202,12 @@ class Testumemcache(unittest.TestCase):
         c.set("key2", "value2")
         c.set("key3", "value3")
         r = c.get_multi(["key1", "key2", "key3", "key4"])
-        
+
         self.assertEquals(("value1", 0), r["key1"])
         self.assertEquals(("value2", 0), r["key2"])
         self.assertEquals(("value3", 0), r["key3"])
         self.assertEquals(None, r.get("key4"))
-        
+
         pass
 
 
@@ -219,7 +219,7 @@ class Testumemcache(unittest.TestCase):
         c.set("key2", "value2")
         c.set("key3", "value3")
         r = c.gets_multi(["key1", "key2", "key3", "key4"])
-        
+
         self.assertEquals(3, len(r["key1"]))
         self.assertEquals(3, len(r["key2"]))
         self.assertEquals(3, len(r["key3"]))
@@ -236,7 +236,7 @@ class Testumemcache(unittest.TestCase):
         c.set("key1", "value1")
         self.assertEquals("NOT_STORED", c.add("key1", "value"))
         pass
- 
+
     def testReplace(self):
         c = Client(MEMCACHED_ADDRESS);
         c.connect();
@@ -260,7 +260,7 @@ class Testumemcache(unittest.TestCase):
         self.assertEquals("STORED", c.prepend("key1", "b"))
         self.assertEquals("ba", c.get("key1")[0])
         pass
-        
+
     def testDel(self):
         c = Client(MEMCACHED_ADDRESS);
         c.connect();
@@ -285,7 +285,7 @@ class Testumemcache(unittest.TestCase):
         c.set("key1", "0")
         c.incr("key1", 313370)
         self.assertEquals("313370", c.get("key1")[0])
-    
+
     def testDecr(self):
         c = Client(MEMCACHED_ADDRESS);
         c.connect();
@@ -293,20 +293,20 @@ class Testumemcache(unittest.TestCase):
         c.decr("key1", 31337)
         self.assertEquals(0, long(c.get("key1")[0]))
 
-        
+
     def testVersion(self):
         c = Client(MEMCACHED_ADDRESS);
         c.connect();
         v = c.version()
         l = v.split('.');
-        
+
         self.assertEquals(3, len(l))
-    
+
     def testStats(self):
         c = Client(MEMCACHED_ADDRESS);
         c.connect();
         d = c.stats()
-        
+
         self.assertTrue (d.has_key("uptime"))
         self.assertTrue (d.has_key("bytes"))
 
@@ -345,7 +345,7 @@ class Testumemcache(unittest.TestCase):
         self.assertEquals(c.get("key1")[0], "31337")
         c.flush_all()
         self.assertEquals(c.get("key1"), None)
-    
+
 if __name__ == '__main__':
     unittest.main()
 
@@ -358,5 +358,5 @@ if __name__ == '__main__':
         unittest.main()
         heap = hp.heapu()
         print heap
-"""        
-        
+"""
+
