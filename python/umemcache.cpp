@@ -30,6 +30,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #define PY_SSIZE_T_CLEAN
 #include <Python.h>
+#include "structmember.h"
 #include "Client.h"
 #include <string.h>
 #include <stdio.h>
@@ -1003,6 +1004,18 @@ static PyMethodDef Client_methods[] = {
   {NULL}
 };
 
+
+static PyMemberDef Client_members[] = {
+    {"sock", T_OBJECT_EX, offsetof(PyClient, sock), 0,
+     "Socket instance"},
+    {"host", T_OBJECT_EX, offsetof(PyClient, host), 0,
+     "Host"},
+    {"port", T_INT, offsetof(PyClient, port), 0,
+     "Port"},
+    {NULL}  /* Sentinel */
+};
+
+
 static PyTypeObject ClientType = {
   PyObject_HEAD_INIT(NULL)
   0,				/* ob_size        */
@@ -1033,7 +1046,7 @@ static PyTypeObject ClientType = {
   0,				/* tp_iter           */
   0,				/* tp_iternext       */
   Client_methods,	     		/* tp_methods        */
-  NULL,			/* tp_members        */
+  Client_members,			/* tp_members        */
   0,				/* tp_getset         */
   0,				/* tp_base           */
   0,				/* tp_dict           */
