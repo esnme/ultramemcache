@@ -1006,7 +1006,7 @@ static PyMethodDef Client_methods[] = {
 
 
 static PyMemberDef Client_members[] = {
-    {"sock", T_OBJECT_EX, offsetof(PyClient, sock), 0,
+    {"sock", T_OBJECT_EX, offsetof(PyClient, sock), READONLY,
      "Socket instance"},
     {"host", T_OBJECT_EX, offsetof(PyClient, host), 0,
      "Host"},
