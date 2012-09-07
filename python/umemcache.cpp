@@ -46,6 +46,10 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #define alloca _alloca
 #endif
 
+#ifndef MAX_ITEM_SIZE
+#define MAX_ITEM_SIZE 100000
+#endif
+
 //#define PRINTMARK() fprintf(stderr, "%s: MARK(%d)\n", __FILE__, __LINE__)
 #define PRINTMARK()
 
@@ -56,6 +60,7 @@ typedef struct {
   PyObject *sock;
   PyObject *host;
   int port;
+  size_t maxSize;
 } PyClient;
 
 int API_send(SOCKETDESC *desc, void *data, size_t cbData)
@@ -154,7 +159,7 @@ int API_connect(SOCKETDESC *desc, const char *address, int port)
 
   PRINTMARK();
 
-  //PyTuple_SET_ITEM doesn't increment ref counter 
+  //PyTuple_SET_ITEM doesn't increment ref counter
   //Py_DECREF(PyTuple_GET_ITEM(args, 1));
   Py_DECREF(args);
   Py_DECREF(method);
@@ -238,12 +243,12 @@ int Client_init(PyClient *self, PyObject *args)
 
   self->client = NULL;
   self->host = NULL;
-
+  self->maxSize = MAX_ITEM_SIZE;
 
   char *address;
   PRINTMARK();
 
-  if (!PyArg_ParseTuple (args, "s", &address))
+  if (!PyArg_ParseTuple (args, "s|i", &address, &self->maxSize))
   {
     PRINTMARK();
     return -1;
@@ -324,7 +329,7 @@ PyObject *Client_disconnect(PyClient *self, PyObject *args)
   Py_RETURN_NONE;
 }
 
-typedef bool (Client::*PFN_COMMAND) (const char *key, size_t cbKey, void *data, size_t cbData, time_t expiration, int flags, bool async);
+typedef bool (Client::*PFN_COMMAND) (const char *key, size_t cbKey, void *data, size_t cbData, time_t expiration, int flags, bool async, size_t maxSize);
 
 PyObject *Client_command(PyClient *self, PFN_COMMAND cmd, PyObject *args)
 {
@@ -345,7 +350,7 @@ PyObject *Client_command(PyClient *self, PFN_COMMAND cmd, PyObject *args)
 
   bool bAsync = async ? true : false;
 
-  if (!(self->client->*cmd)(pKey, cbKey, pData, cbData, expire, flags, async ? true : false))
+  if (!(self->client->*cmd)(pKey, cbKey, pData, cbData, expire, flags, async ? true : false, self->maxSize))
   {
     if (!PyErr_Occurred())
     {
@@ -749,7 +754,7 @@ PyObject *Client_cas(PyClient *self, PyObject *args)
     return NULL;
   }
 
-  if (!self->client->cas(pKey, cbKey, cas, pData, cbData, expire, flags, async ? true : false))
+  if (!self->client->cas(pKey, cbKey, cas, pData, cbData, expire, flags, async ? true : false, self->maxSize))
   {
     if (!PyErr_Occurred())
     {

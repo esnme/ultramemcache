@@ -346,6 +346,14 @@ class Testumemcache(unittest.TestCase):
         c.flush_all()
         self.assertEquals(c.get("key1"), None)
 
+    def testMaxSize(self):
+        c = Client(MEMCACHED_ADDRESS, 1)
+        c.connect()
+        self.assertRaises(RuntimeError, c.set, 'key1', 'xx')
+        c.set("key1", "3")
+        self.assertEquals(c.get("key1")[0], "3")
+
+
 if __name__ == '__main__':
     unittest.main()
 
