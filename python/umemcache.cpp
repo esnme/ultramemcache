@@ -349,7 +349,7 @@ PyObject *Client_command(PyClient *self, PFN_COMMAND cmd, PyObject *args)
   {
     if (!PyErr_Occurred())
     {
-      return PyErr_Format(PyExc_RuntimeError, "Operation failed");
+      return PyErr_Format(PyExc_RuntimeError, "Operation failed %s", self->client->getError());
     }
 
     return NULL;
