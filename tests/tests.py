@@ -363,6 +363,17 @@ class Testumemcache(unittest.TestCase):
         c.set("key1", "31337")
         self.assertEquals(c.get("key1")[0], "31337")
 
+    def testReadOnly(self):
+        # make sure once a Client class is created
+        # host, port and sock are readonly
+        c = Client(MEMCACHED_ADDRESS)
+        self.assertEquals(c.host, MEMCACHED_HOST)
+        self.assertEquals(c.port, MEMCACHED_PORT)
+        self.assertTrue(isinstance(c.sock, socket.socket))
+
+        for attr in ('sock', 'host', 'port'):
+            self.assertRaises(TypeError, setattr, c, attr, 'booo')
+
 
 if __name__ == '__main__':
     leak = len(sys.argv) > 1 and sys.argv[-1] == '--leak'
