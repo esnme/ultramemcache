@@ -30,6 +30,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #define PY_SSIZE_T_CLEAN
 #include <Python.h>
+#include "structmember.h"
 #include "Client.h"
 #include <string.h>
 #include <stdio.h>
@@ -47,7 +48,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #endif
 
 #ifndef MAX_ITEM_SIZE
-#define MAX_ITEM_SIZE 100000
+#define MAX_ITEM_SIZE 1000000
 #endif
 
 //#define PRINTMARK() fprintf(stderr, "%s: MARK(%d)\n", __FILE__, __LINE__)
@@ -235,7 +236,7 @@ void *API_createSocket(int family, int type, int proto)
 
 
 
-int Client_init(PyClient *self, PyObject *args)
+int Client_init(PyClient *self, PyObject *args, PyObject *kwargs)
 {
   /* Args:
   def __init__(self, address, protocol = "text", codec = "default"):
@@ -248,7 +249,9 @@ int Client_init(PyClient *self, PyObject *args)
   char *address;
   PRINTMARK();
 
-  if (!PyArg_ParseTuple (args, "s|i", &address, &self->maxSize))
+  static char *kwlist[] = {"address", "max_item_size", NULL};
+
+  if (!PyArg_ParseTupleAndKeywords(args, kwargs, "s|i", kwlist, &address, &self->maxSize))
   {
     PRINTMARK();
     return -1;
@@ -1008,6 +1011,13 @@ static PyMethodDef Client_methods[] = {
   {NULL}
 };
 
+static PyMemberDef Client_members[] = {
+    {"max_item_size", T_INT, offsetof(PyClient, maxSize), READONLY,
+     "Max item size"},
+    {NULL}  /* Sentinel */
+};
+
+
 static PyTypeObject ClientType = {
   PyObject_HEAD_INIT(NULL)
   0,				/* ob_size        */
@@ -1030,7 +1040,11 @@ static PyTypeObject ClientType = {
   0,				/* tp_setattro    */
   0,				/* tp_as_buffer   */
   Py_TPFLAGS_DEFAULT,		/* tp_flags       */
-  "",	/* tp_doc         */
+  "Memcache client.\n\n" 
+  "Options:\n"
+  "- address: memcache server address.\n"
+  "- max_item_size: maximum size for an item in memcached.\n"
+  "  Defaults to 100,000 bytes",	/* tp_doc         */
   0,				/* tp_traverse       */
   0,				/* tp_clear          */
   0,				/* tp_richcompare    */
@@ -1038,7 +1052,7 @@ static PyTypeObject ClientType = {
   0,				/* tp_iter           */
   0,				/* tp_iternext       */
   Client_methods,	     		/* tp_methods        */
-  NULL,			/* tp_members        */
+  Client_members,			/* tp_members        */
   0,				/* tp_getset         */
   0,				/* tp_base           */
   0,				/* tp_dict           */
