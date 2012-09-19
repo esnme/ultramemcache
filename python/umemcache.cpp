@@ -1015,6 +1015,7 @@ static PyMemberDef Client_members[] = {
     {NULL}  /* Sentinel */
 };
 
+
 static PyTypeObject ClientType = {
   PyObject_HEAD_INIT(NULL)
   0,                /* ob_size        */
