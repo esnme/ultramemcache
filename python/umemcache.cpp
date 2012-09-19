@@ -30,6 +30,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #define PY_SSIZE_T_CLEAN
 #include <Python.h>
+#include "structmember.h"
 #include "Client.h"
 #include <string.h>
 #include <stdio.h>
@@ -283,7 +284,7 @@ int Client_init(PyClient *self, PyObject *args)
 void Client_Destructor(PyClient *self)
 {
   PRINTMARK();
-  if (self->client)	delete self->client;
+  if (self->client)    delete self->client;
   PRINTMARK();
   Py_XDECREF(self->host);
   PRINTMARK();
@@ -349,7 +350,7 @@ PyObject *Client_command(PyClient *self, PFN_COMMAND cmd, PyObject *args)
   {
     if (!PyErr_Occurred())
     {
-      return PyErr_Format(PyExc_RuntimeError, "Operation failed %s", self->client->getError());
+      return PyErr_Format(PyExc_RuntimeError, "Operation failed");
     }
 
     return NULL;
@@ -980,67 +981,79 @@ PyObject *Client_flush_all(PyClient *self, PyObject *args)
 
 
 static PyMethodDef Client_methods[] = {
-  {"connect", (PyCFunction)			Client_connect,			METH_NOARGS, ""},
-  {"is_connected", (PyCFunction)			Client_is_connected,			METH_NOARGS, ""},
-  {"disconnect", (PyCFunction)			Client_disconnect,			METH_NOARGS, ""},
-  {"close", (PyCFunction)			Client_disconnect,			METH_NOARGS, ""},
-  {"set", (PyCFunction)			Client_set,			METH_VARARGS, "def set(self, key, data, expiration = 0, flags = 0, async = False)"},
-  {"get", (PyCFunction)			Client_get,			METH_VARARGS, "def get(self, key, default = None)"},
-  {"gets", (PyCFunction)			Client_gets,			METH_VARARGS, "def gets(self, key, default = None)"},
-  {"get_multi", (PyCFunction)			Client_get_multi,			METH_O, "def get_multi(self, keys)"},
-  {"gets_multi", (PyCFunction)			Client_gets_multi,			METH_O, "def gets_multi(self, keys)"},
-  {"add", (PyCFunction)			Client_add,			METH_VARARGS, "def add(self, key, data, expiration = 0, flags = 0, async = False)"},
-  {"replace", (PyCFunction)			Client_replace,			METH_VARARGS, "def replace(self, key, data, expiration = 0, flags = 0, async = False)"},
-  {"append", (PyCFunction)			Client_append,			METH_VARARGS, "def append(self, key, data, expiration = 0, flags = 0, async = False)"},
-  {"prepend", (PyCFunction)			Client_prepend,			METH_VARARGS, "def prepend(self, key, data, expiration = 0, flags = 0, async = False)"},
-  {"delete", (PyCFunction)			Client_delete,			METH_VARARGS, "def delete(self, key, expiration = 0, async = False)"},
-  {"cas", (PyCFunction)			Client_cas,			METH_VARARGS, "def cas(self, key, data, cas_unique, expiration = 0, flags = 0, async = False)"},
-  {"incr", (PyCFunction)			Client_incr,			METH_VARARGS, "def incr(self, key, increment, async = False)"},
-  {"decr", (PyCFunction)			Client_decr,			METH_VARARGS, "def decr(self, key, decrement, async = False)"},
-  {"version", (PyCFunction)			Client_version,			METH_NOARGS, "def version(self)"},
-  {"stats", (PyCFunction)		Client_stats, METH_NOARGS, "def stats(self)"},
-  {"flush_all", (PyCFunction)		Client_flush_all, METH_VARARGS, "def flush_all(self, expiration = 0, async = False)"},
+  {"connect", (PyCFunction)            Client_connect,            METH_NOARGS, ""},
+  {"is_connected", (PyCFunction)            Client_is_connected,            METH_NOARGS, ""},
+  {"disconnect", (PyCFunction)            Client_disconnect,            METH_NOARGS, ""},
+  {"close", (PyCFunction)            Client_disconnect,            METH_NOARGS, ""},
+  {"set", (PyCFunction)            Client_set,            METH_VARARGS, "def set(self, key, data, expiration = 0, flags = 0, async = False)"},
+  {"get", (PyCFunction)            Client_get,            METH_VARARGS, "def get(self, key, default = None)"},
+  {"gets", (PyCFunction)            Client_gets,            METH_VARARGS, "def gets(self, key, default = None)"},
+  {"get_multi", (PyCFunction)            Client_get_multi,            METH_O, "def get_multi(self, keys)"},
+  {"gets_multi", (PyCFunction)            Client_gets_multi,            METH_O, "def gets_multi(self, keys)"},
+  {"add", (PyCFunction)            Client_add,            METH_VARARGS, "def add(self, key, data, expiration = 0, flags = 0, async = False)"},
+  {"replace", (PyCFunction)            Client_replace,            METH_VARARGS, "def replace(self, key, data, expiration = 0, flags = 0, async = False)"},
+  {"append", (PyCFunction)            Client_append,            METH_VARARGS, "def append(self, key, data, expiration = 0, flags = 0, async = False)"},
+  {"prepend", (PyCFunction)            Client_prepend,            METH_VARARGS, "def prepend(self, key, data, expiration = 0, flags = 0, async = False)"},
+  {"delete", (PyCFunction)            Client_delete,            METH_VARARGS, "def delete(self, key, expiration = 0, async = False)"},
+  {"cas", (PyCFunction)            Client_cas,            METH_VARARGS, "def cas(self, key, data, cas_unique, expiration = 0, flags = 0, async = False)"},
+  {"incr", (PyCFunction)            Client_incr,            METH_VARARGS, "def incr(self, key, increment, async = False)"},
+  {"decr", (PyCFunction)            Client_decr,            METH_VARARGS, "def decr(self, key, decrement, async = False)"},
+  {"version", (PyCFunction)            Client_version,            METH_NOARGS, "def version(self)"},
+  {"stats", (PyCFunction)        Client_stats, METH_NOARGS, "def stats(self)"},
+  {"flush_all", (PyCFunction)        Client_flush_all, METH_VARARGS, "def flush_all(self, expiration = 0, async = False)"},
   {NULL}
 };
 
+
+static PyMemberDef Client_members[] = {
+    {"sock", T_OBJECT_EX, offsetof(PyClient, sock), READONLY,
+     "Socket instance"},
+    {"host", T_OBJECT_EX, offsetof(PyClient, host), READONLY,
+     "Host"},
+    {"port", T_INT, offsetof(PyClient, port), READONLY,
+     "Port"},
+    {NULL}  /* Sentinel */
+};
+
+
 static PyTypeObject ClientType = {
   PyObject_HEAD_INIT(NULL)
-  0,				/* ob_size        */
-  "umemcache.Client",		/* tp_name        */
-  sizeof(PyClient),		/* tp_basicsize   */
-  0,				/* tp_itemsize    */
-  (destructor) Client_Destructor,		/* tp_dealloc     */
-  0,				/* tp_print       */
-  0,				/* tp_getattr     */
-  0,				/* tp_setattr     */
-  0,				/* tp_compare     */
-  0,				/* tp_repr        */
-  0,				/* tp_as_number   */
-  0,				/* tp_as_sequence */
-  0,				/* tp_as_mapping  */
-  0,				/* tp_hash        */
-  0,				/* tp_call        */
-  0,				/* tp_str         */
-  0,				/* tp_getattro    */
-  0,				/* tp_setattro    */
-  0,				/* tp_as_buffer   */
-  Py_TPFLAGS_DEFAULT,		/* tp_flags       */
-  "",	/* tp_doc         */
-  0,				/* tp_traverse       */
-  0,				/* tp_clear          */
-  0,				/* tp_richcompare    */
-  0,				/* tp_weaklistoffset    */
-  0,				/* tp_iter           */
-  0,				/* tp_iternext       */
-  Client_methods,	     		/* tp_methods        */
-  NULL,			/* tp_members        */
-  0,				/* tp_getset         */
-  0,				/* tp_base           */
-  0,				/* tp_dict           */
-  0,				/* tp_descr_get      */
-  0,				/* tp_descr_set      */
-  0,				/* tp_dictoffset     */
-  (initproc)Client_init,		/* tp_init           */
+  0,                /* ob_size        */
+  "umemcache.Client",        /* tp_name        */
+  sizeof(PyClient),        /* tp_basicsize   */
+  0,                /* tp_itemsize    */
+  (destructor) Client_Destructor,        /* tp_dealloc     */
+  0,                /* tp_print       */
+  0,                /* tp_getattr     */
+  0,                /* tp_setattr     */
+  0,                /* tp_compare     */
+  0,                /* tp_repr        */
+  0,                /* tp_as_number   */
+  0,                /* tp_as_sequence */
+  0,                /* tp_as_mapping  */
+  0,                /* tp_hash        */
+  0,                /* tp_call        */
+  0,                /* tp_str         */
+  0,                /* tp_getattro    */
+  0,                /* tp_setattro    */
+  0,                /* tp_as_buffer   */
+  Py_TPFLAGS_DEFAULT,        /* tp_flags       */
+  "",    /* tp_doc         */
+  0,                /* tp_traverse       */
+  0,                /* tp_clear          */
+  0,                /* tp_richcompare    */
+  0,                /* tp_weaklistoffset    */
+  0,                /* tp_iter           */
+  0,                /* tp_iternext       */
+  Client_methods,                 /* tp_methods        */
+  Client_members,            /* tp_members        */
+  0,                /* tp_getset         */
+  0,                /* tp_base           */
+  0,                /* tp_dict           */
+  0,                /* tp_descr_get      */
+  0,                /* tp_descr_set      */
+  0,                /* tp_dictoffset     */
+  (initproc)Client_init,  /* tp_init           */
 };
 
 static PyMethodDef methods[] = {
