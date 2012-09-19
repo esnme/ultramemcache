@@ -160,7 +160,7 @@ int API_connect(SOCKETDESC *desc, const char *address, int port)
 
   PRINTMARK();
 
-  //PyTuple_SET_ITEM doesn't increment ref counter
+  //PyTuple_SET_ITEM doesn't increment ref counter 
   //Py_DECREF(PyTuple_GET_ITEM(args, 1));
   Py_DECREF(args);
   Py_DECREF(method);
@@ -245,6 +245,7 @@ int Client_init(PyClient *self, PyObject *args, PyObject *kwargs)
   self->client = NULL;
   self->host = NULL;
   self->maxSize = MAX_ITEM_SIZE;
+
 
   char *address;
   PRINTMARK();
