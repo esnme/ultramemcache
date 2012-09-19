@@ -30,6 +30,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #define PY_SSIZE_T_CLEAN
 #include <Python.h>
+#include "structmember.h"
 #include "Client.h"
 #include <string.h>
 #include <stdio.h>
@@ -46,6 +47,10 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #define alloca _alloca
 #endif
 
+#ifndef MAX_ITEM_SIZE
+#define MAX_ITEM_SIZE 1000000
+#endif
+
 //#define PRINTMARK() fprintf(stderr, "%s: MARK(%d)\n", __FILE__, __LINE__)
 #define PRINTMARK()
 
@@ -56,6 +61,7 @@ typedef struct {
   PyObject *sock;
   PyObject *host;
   int port;
+  size_t maxSize;
 } PyClient;
 
 int API_send(SOCKETDESC *desc, void *data, size_t cbData)
@@ -230,7 +236,7 @@ void *API_createSocket(int family, int type, int proto)
 
 
 
-int Client_init(PyClient *self, PyObject *args)
+int Client_init(PyClient *self, PyObject *args, PyObject *kwargs)
 {
   /* Args:
   def __init__(self, address, protocol = "text", codec = "default"):
@@ -238,12 +244,15 @@ int Client_init(PyClient *self, PyObject *args)
 
   self->client = NULL;
   self->host = NULL;
+  self->maxSize = MAX_ITEM_SIZE;
 
 
   char *address;
   PRINTMARK();
 
-  if (!PyArg_ParseTuple (args, "s", &address))
+  static char *kwlist[] = {"address", "max_item_size", NULL};
+
+  if (!PyArg_ParseTupleAndKeywords(args, kwargs, "s|i", kwlist, &address, &self->maxSize))
   {
     PRINTMARK();
     return -1;
@@ -324,7 +333,7 @@ PyObject *Client_disconnect(PyClient *self, PyObject *args)
   Py_RETURN_NONE;
 }
 
-typedef bool (Client::*PFN_COMMAND) (const char *key, size_t cbKey, void *data, size_t cbData, time_t expiration, int flags, bool async);
+typedef bool (Client::*PFN_COMMAND) (const char *key, size_t cbKey, void *data, size_t cbData, time_t expiration, int flags, bool async, size_t maxSize);
 
 PyObject *Client_command(PyClient *self, PFN_COMMAND cmd, PyObject *args)
 {
@@ -345,11 +354,11 @@ PyObject *Client_command(PyClient *self, PFN_COMMAND cmd, PyObject *args)
 
   bool bAsync = async ? true : false;
 
-  if (!(self->client->*cmd)(pKey, cbKey, pData, cbData, expire, flags, async ? true : false))
+  if (!(self->client->*cmd)(pKey, cbKey, pData, cbData, expire, flags, async ? true : false, self->maxSize))
   {
     if (!PyErr_Occurred())
     {
-      return PyErr_Format(PyExc_RuntimeError, "Operation failed %s", self->client->getError());
+      return PyErr_Format(PyExc_RuntimeError, "Operation failed");
     }
 
     return NULL;
@@ -749,7 +758,7 @@ PyObject *Client_cas(PyClient *self, PyObject *args)
     return NULL;
   }
 
-  if (!self->client->cas(pKey, cbKey, cas, pData, cbData, expire, flags, async ? true : false))
+  if (!self->client->cas(pKey, cbKey, cas, pData, cbData, expire, flags, async ? true : false, self->maxSize))
   {
     if (!PyErr_Occurred())
     {
@@ -1003,6 +1012,13 @@ static PyMethodDef Client_methods[] = {
   {NULL}
 };
 
+static PyMemberDef Client_members[] = {
+    {"max_item_size", T_INT, offsetof(PyClient, maxSize), READONLY,
+     "Max item size"},
+    {NULL}  /* Sentinel */
+};
+
+
 static PyTypeObject ClientType = {
   PyObject_HEAD_INIT(NULL)
   0,				/* ob_size        */
@@ -1025,7 +1041,11 @@ static PyTypeObject ClientType = {
   0,				/* tp_setattro    */
   0,				/* tp_as_buffer   */
   Py_TPFLAGS_DEFAULT,		/* tp_flags       */
-  "",	/* tp_doc         */
+  "Memcache client.\n\n" 
+  "Options:\n"
+  "- address: memcache server address.\n"
+  "- max_item_size: maximum size for an item in memcached.\n"
+  "  Defaults to 100,000 bytes",	/* tp_doc         */
   0,				/* tp_traverse       */
   0,				/* tp_clear          */
   0,				/* tp_richcompare    */
@@ -1033,7 +1053,7 @@ static PyTypeObject ClientType = {
   0,				/* tp_iter           */
   0,				/* tp_iternext       */
   Client_methods,	     		/* tp_methods        */
-  NULL,			/* tp_members        */
+  Client_members,			/* tp_members        */
   0,				/* tp_getset         */
   0,				/* tp_base           */
   0,				/* tp_dict           */

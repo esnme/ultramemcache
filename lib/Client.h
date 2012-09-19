@@ -72,15 +72,15 @@ public:
   bool getReadNext(char **key, size_t *cbKey, char **data, size_t *cbData, int *flags, UINT64 *cas, bool *bError);
 
 
-  bool set(const char *key, size_t cbKey, void *data, size_t cbData, time_t expiration, int flags, bool async);
+  bool set(const char *key, size_t cbKey, void *data, size_t cbData, time_t expiration, int flags, bool async, size_t maxSize);
   bool del(const char *key, size_t cbKey, time_t *expiration, bool async);
-  bool add(const char *key, size_t cbKey, void *data, size_t cbData, time_t expiration, int flags, bool async);
+  bool add(const char *key, size_t cbKey, void *data, size_t cbData, time_t expiration, int flags, bool async, size_t maxSize);
 
-  bool replace(const char *key, size_t cbKey, void *data, size_t cbData, time_t expiration, int flags, bool async);
-  bool append(const char *key, size_t cbKey, void *data, size_t cbData, time_t expiration, int flags, bool async);
-  bool prepend(const char *key, size_t cbKey, void *data, size_t cbData, time_t expiration, int flags, bool async);
+  bool replace(const char *key, size_t cbKey, void *data, size_t cbData, time_t expiration, int flags, bool async, size_t maxSize);
+  bool append(const char *key, size_t cbKey, void *data, size_t cbData, time_t expiration, int flags, bool async, size_t maxSize);
+  bool prepend(const char *key, size_t cbKey, void *data, size_t cbData, time_t expiration, int flags, bool async, size_t maxSize);
 
-  bool cas(const char *key, size_t cbKey, UINT64 casUnique, void *data, size_t cbData, time_t expiration, int flags, bool async);
+  bool cas(const char *key, size_t cbKey, UINT64 casUnique, void *data, size_t cbData, time_t expiration, int flags, bool async, size_t maxSize);
   bool incr(const char *key, size_t cbKey, UINT64 increment, bool async);
   bool decr(const char *key, size_t cbKey, UINT64 decrement, bool async);
   bool version(char **version, size_t *cbVersion);
@@ -91,7 +91,7 @@ public:
   const char *getError(void);
 
 private:
-  bool command(const char *cmd, size_t cbCmd, const char *key, size_t cbKey, void *data, size_t cbData, time_t expiration, int flags, bool async);
+  bool command(const char *cmd, size_t cbCmd, const char *key, size_t cbKey, void *data, size_t cbData, time_t expiration, int flags, bool async, size_t maxSize);
   bool sendWriteBuffer(void);
   bool readLine(void);
 

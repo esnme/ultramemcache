@@ -32,6 +32,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <ctype.h>
 #include <stdio.h>
 #include <assert.h>
+#include <sstream>
 
 //#define PRINTMARK() fprintf(stderr, "%s: MARK(%d)\n", __FILE__, __LINE__)		
 #define PRINTMARK() 		
@@ -156,12 +157,14 @@ bool Client::getResult(char **pData, size_t *cbSize)
   return true;
 }
 
-bool Client::cas(const char *key, size_t cbKey, UINT64 casUnique, void *data, size_t cbData, time_t expiration, int flags, bool async)
+bool Client::cas(const char *key, size_t cbKey, UINT64 casUnique, void *data, size_t cbData, time_t expiration, int flags, bool async, size_t maxSize)
 {
 
-  if (cbData > 1000 * 1000)
+  if (cbData > maxSize)
   {
-    setError("Data size can't be larger than 1000 000 bytes");
+    std::stringstream sstm;
+    sstm << "Data size can't be larger than" << maxSize << "bytes";
+    setError((char*)sstm.str().data());
     return false;
   }
 
@@ -204,11 +207,13 @@ bool Client::cas(const char *key, size_t cbKey, UINT64 casUnique, void *data, si
 }
 
 
-bool Client::command(const char *cmd, size_t cbCmd, const char *key, size_t cbKey, void *data, size_t cbData, time_t expiration, int flags, bool async)
+bool Client::command(const char *cmd, size_t cbCmd, const char *key, size_t cbKey, void *data, size_t cbData, time_t expiration, int flags, bool async, size_t maxSize)
 {
-  if (cbData > 1000 * 1000)
+  if (cbData > maxSize)
   {
-    setError("Data size can't be larger than 1000 000 bytes");
+    std::stringstream sstm;
+    sstm << "Data size can't be larger than" << maxSize << "bytes";
+    setError((char*)sstm.str().data());
     return false;
   }
 
@@ -251,29 +256,29 @@ bool Client::command(const char *cmd, size_t cbCmd, const char *key, size_t cbKe
   return true;
 }
 
-bool Client::set(const char *key, size_t cbKey, void *data, size_t cbData, time_t expiration, int flags, bool async)
+bool Client::set(const char *key, size_t cbKey, void *data, size_t cbData, time_t expiration, int flags, bool async, size_t maxSize)
 {
-  return command ("set", 3, key, cbKey, data, cbData, expiration, flags, async);
+  return command ("set", 3, key, cbKey, data, cbData, expiration, flags, async, maxSize);
 }
 
-bool Client::add(const char *key, size_t cbKey, void *data, size_t cbData, time_t expiration, int flags, bool async)
+bool Client::add(const char *key, size_t cbKey, void *data, size_t cbData, time_t expiration, int flags, bool async, size_t maxSize)
 {
-  return command ("add", 3, key, cbKey, data, cbData, expiration, flags, async);
+  return command ("add", 3, key, cbKey, data, cbData, expiration, flags, async, maxSize);
 }
 
-bool Client::replace(const char *key, size_t cbKey, void *data, size_t cbData, time_t expiration, int flags, bool async)
+bool Client::replace(const char *key, size_t cbKey, void *data, size_t cbData, time_t expiration, int flags, bool async, size_t maxSize)
 {
-  return command ("replace", 7, key, cbKey, data, cbData, expiration, flags, async);
+  return command ("replace", 7, key, cbKey, data, cbData, expiration, flags, async, maxSize);
 }
 
-bool Client::append(const char *key, size_t cbKey, void *data, size_t cbData, time_t expiration, int flags, bool async)
+bool Client::append(const char *key, size_t cbKey, void *data, size_t cbData, time_t expiration, int flags, bool async, size_t maxSize)
 {
-  return command ("append", 6, key, cbKey, data, cbData, expiration, flags, async);
+  return command ("append", 6, key, cbKey, data, cbData, expiration, flags, async, maxSize);
 }
 
-bool Client::prepend(const char *key, size_t cbKey, void *data, size_t cbData, time_t expiration, int flags, bool async)
+bool Client::prepend(const char *key, size_t cbKey, void *data, size_t cbData, time_t expiration, int flags, bool async, size_t maxSize)
 {
-  return command ("prepend", 7, key, cbKey, data, cbData, expiration, flags, async);
+  return command ("prepend", 7, key, cbKey, data, cbData, expiration, flags, async, maxSize);
 }
 
 bool Client::del(const char *key, size_t cbKey, time_t *expiration, bool async)
