@@ -42,12 +42,12 @@ Programming Language :: C
 Programming Language :: Python :: 2.6
 Programming Language :: Python :: 2.7
 """.splitlines()))
-    
+
 libs = []
 
 if sys.platform != "win32":
     libs.append("stdc++")
-    
+
 if sys.platform == "win32":
     libs.append("ws2_32")
 
@@ -57,18 +57,26 @@ module1 = Extension('umemcache',
                 library_dirs = [],
                 libraries=libs,
                 define_macros=[('WIN32_LEAN_AND_MEAN', None)])
-					
+
+f = open('README.rst')
+try:
+    README = f.read()
+finally"
+    f.close()
+
+
 setup (name = 'umemcache',
        version = "1.5",
        description = "Ultra fast memcache client written in highly optimized C++ with Python bindings",
+       long_description = README,
        ext_modules = [module1],
        author="Jonas Tarnstrom",
        author_email="jonas.tarnstrom@esn.me",
        download_url="http://github.com/esnme/ultramemcache",
        license="BSD License",
-       platforms=['any'],	   
-	   url="http://www.esn.me",
+       platforms=['any'],
+       url="http://www.esn.me",
        classifiers=CLASSIFIERS,
-	   )
-       
-       
+       )
+
+
