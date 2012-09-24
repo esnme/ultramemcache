@@ -58,9 +58,17 @@ module1 = Extension('umemcache',
                 libraries=libs,
                 define_macros=[('WIN32_LEAN_AND_MEAN', None)])
 
+f = open('README.rst')
+try:
+    README = f.read()
+finally"
+    f.close()
+
+
 setup (name = 'umemcache',
        version = "1.5",
        description = "Ultra fast memcache client written in highly optimized C++ with Python bindings",
+       long_description = README,
        ext_modules = [module1],
        author="Jonas Tarnstrom",
        author_email="jonas.tarnstrom@esn.me",
