@@ -1051,7 +1051,7 @@ static PyTypeObject ClientType = {
   "Options:\n"
   "- address: memcache server address.\n"
   "- max_item_size: maximum size for an item in memcached.\n"
-  "  Defaults to 100,000 bytes",	/* tp_doc         */
+  "  Defaults to 1 million bytes",	/* tp_doc         */
   0,                /* tp_traverse       */
   0,                /* tp_clear          */
   0,                /* tp_richcompare    */
