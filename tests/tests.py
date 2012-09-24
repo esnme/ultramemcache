@@ -47,7 +47,6 @@ MEMCACHED_HOST = "127.0.0.1"
 MEMCACHED_PORT = 11211
 MEMCACHED_ADDRESS = "%s:%d" % (MEMCACHED_HOST, MEMCACHED_PORT)
 
-
 class Testumemcache(unittest.TestCase):
     log = logging.getLogger('umemcache')
 
@@ -352,6 +351,13 @@ class Testumemcache(unittest.TestCase):
         c.flush_all()
         self.assertEquals(c.get("key1"), None)
 
+    def testMaxSize(self):
+        c = Client(MEMCACHED_ADDRESS, 1)
+        c.connect()
+        self.assertRaises(RuntimeError, c.set, 'key1', 'xx')
+        c.set("key1", "3")
+        self.assertEquals(c.get("key1")[0], "3")
+
     def testSockAccess(self):
         # accessing the members before connect() is called
         c = Client(MEMCACHED_ADDRESS)
@@ -373,7 +379,6 @@ class Testumemcache(unittest.TestCase):
 
         for attr in ('sock', 'host', 'port'):
             self.assertRaises(TypeError, setattr, c, attr, 'booo')
-
 
 if __name__ == '__main__':
     leak = len(sys.argv) > 1 and sys.argv[-1] == '--leak'
