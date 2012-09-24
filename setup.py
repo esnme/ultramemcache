@@ -61,7 +61,7 @@ module1 = Extension('umemcache',
 f = open('README.rst')
 try:
     README = f.read()
-finally"
+finally:
     f.close()
 
 
