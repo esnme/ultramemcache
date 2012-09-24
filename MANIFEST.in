@@ -1,5 +1,5 @@
 include tests/*.py
-include README
+include README.rst
 include python/*.cpp
 include python/*.h
 include lib/*.cpp
