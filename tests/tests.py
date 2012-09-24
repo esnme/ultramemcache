@@ -38,9 +38,14 @@ import datetime
 import logging
 import unittest
 import random
+import socket
+import sys
 from umemcache import Client
 
-MEMCACHED_ADDRESS = "127.0.0.1:11211"
+
+MEMCACHED_HOST = "127.0.0.1"
+MEMCACHED_PORT = 11211
+MEMCACHED_ADDRESS = "%s:%d" % (MEMCACHED_HOST, MEMCACHED_PORT)
 
 class Testumemcache(unittest.TestCase):
     log = logging.getLogger('umemcache')
@@ -353,18 +358,46 @@ class Testumemcache(unittest.TestCase):
         c.set("key1", "3")
         self.assertEquals(c.get("key1")[0], "3")
 
+    def testSockAccess(self):
+        # accessing the members before connect() is called
+        c = Client(MEMCACHED_ADDRESS)
+        self.assertEquals(c.host, MEMCACHED_HOST)
+        self.assertEquals(c.port, MEMCACHED_PORT)
+        self.assertTrue(isinstance(c.sock, socket.socket))
+        c.sock.settimeout(2)
+        c.connect()
+        c.set("key1", "31337")
+        self.assertEquals(c.get("key1")[0], "31337")
+
+    def testReadOnly(self):
+        # make sure once a Client class is created
+        # host, port and sock are readonly
+        c = Client(MEMCACHED_ADDRESS)
+        self.assertEquals(c.host, MEMCACHED_HOST)
+        self.assertEquals(c.port, MEMCACHED_PORT)
+        self.assertTrue(isinstance(c.sock, socket.socket))
+
+        for attr in ('sock', 'host', 'port'):
+            self.assertRaises(TypeError, setattr, c, attr, 'booo')
 
 if __name__ == '__main__':
-    unittest.main()
-
-"""
-if __name__ == '__main__':
-    from guppy import hpy
-    hp = hpy()
-    hp.setrelheap()
-    while True:
+    leak = len(sys.argv) > 1 and sys.argv[-1] == '--leak'
+    if not leak:
         unittest.main()
-        heap = hp.heapu()
-        print heap
-"""
+    else:
+        sys.argv = sys.argv[:-1]
+        try:
+            from guppy import hpy
+        except ImportError:
+            print('You need to install guppy')
+            sys.exit(0)
 
+        hp = hpy()
+        hp.setrelheap()
+
+        while True:
+            try:
+                unittest.main()
+            finally:
+                heap = hp.heapu()
+                print heap
