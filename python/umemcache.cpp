@@ -622,7 +622,7 @@ PyObject *Client_gets_multi(PyClient *self, PyObject *okeys)
   UINT64 cas;
   int flags;
 
-  self->client->getBegin();
+  self->client->getsBegin();
 
   PyObject *iterator = PyObject_GetIter(okeys);
 
