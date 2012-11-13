@@ -284,6 +284,23 @@ class Testumemcache(unittest.TestCase):
         c.set("key1", "a")
         self.assertEquals("EXISTS", c.cas("key1", "b", cas))
 
+    def testCasGetsMulti(self):
+        c = Client(MEMCACHED_ADDRESS)
+        c.connect()
+        c.set("key1", "a")
+        c.set("key2", "a")
+        results = c.gets_multi(("key1", "key2"))
+        cas1 = results["key1"][2]
+        cas2 = results["key2"][2]
+        self.assertEquals("STORED", c.cas("key1", "b", cas1))
+        self.assertEquals("STORED", c.cas("key2", "b", cas2))
+        results = c.gets_multi(("key1", "key2"))
+        cas1 = results["key1"][2]
+        cas2 = results["key2"][2]
+        c.set("key1", "a")
+        self.assertEquals("EXISTS", c.cas("key1", "b", cas1))
+        self.assertEquals("STORED", c.cas("key2", "b", cas2))
+
     def testIncr(self):
         c = Client(MEMCACHED_ADDRESS);
         c.connect();
