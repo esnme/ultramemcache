@@ -40,7 +40,7 @@ import unittest
 import random
 import socket
 import sys
-from umemcache import Client
+from umemcache import Client, MemcachedError
 
 
 MEMCACHED_HOST = "127.0.0.1"
@@ -146,10 +146,15 @@ class Testumemcache(unittest.TestCase):
         try:
             c.connect();
             assert False
-        except (RuntimeError):
+        except (MemcachedError):
             pass
 
         pass
+
+    def testExceptionIsARuntimeError(self):
+        c = Client(MEMCACHED_ADDRESS, 1)
+        c.connect()
+        self.assertRaises(RuntimeError, c.set, 'key1', 'xx')
 
     def testConnectCloseQuery(self):
         c = Client(MEMCACHED_ADDRESS);
@@ -169,7 +174,7 @@ class Testumemcache(unittest.TestCase):
         try:
             r = c.set("test", data)
             assert False
-        except(RuntimeError):
+        except(MemcachedError):
             pass
 
 
@@ -372,7 +377,7 @@ class Testumemcache(unittest.TestCase):
     def testMaxSize(self):
         c = Client(MEMCACHED_ADDRESS, 1)
         c.connect()
-        self.assertRaises(RuntimeError, c.set, 'key1', 'xx')
+        self.assertRaises(MemcachedError, c.set, 'key1', 'xx')
         c.set("key1", "3")
         self.assertEquals(c.get("key1")[0], "3")
 
@@ -551,13 +556,18 @@ class Testumemcache(unittest.TestCase):
 
         c.begin_pipeline()
 
-        self.assertRaises(RuntimeError, c.get, "foo")
-        self.assertRaises(RuntimeError, c.gets, "foo")
-        self.assertRaises(RuntimeError, c.get_multi, ["foo"])
-        self.assertRaises(RuntimeError, c.gets_multi, ["foo"])
-        self.assertRaises(RuntimeError, c.version)
-        self.assertRaises(RuntimeError, c.stats)
+        self.assertRaises(MemcachedError, c.get, "foo")
+        self.assertRaises(MemcachedError, c.gets, "foo")
+        self.assertRaises(MemcachedError, c.get_multi, ["foo"])
+        self.assertRaises(MemcachedError, c.gets_multi, ["foo"])
+        self.assertRaises(MemcachedError, c.version)
+        self.assertRaises(MemcachedError, c.stats)
 
+
+    def testExceptionIsARuntimeError(self):
+        c = Client(MEMCACHED_ADDRESS, 1)
+        c.connect()
+        self.assertRaises(RuntimeError, c.set, 'key1', 'xx')
 
 if __name__ == '__main__':
     leak = len(sys.argv) > 1 and sys.argv[-1] == '--leak'
