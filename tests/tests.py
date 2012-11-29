@@ -533,6 +533,30 @@ class Testumemcache(unittest.TestCase):
         self.assertEquals("wilma", c1.get("cas2")[0])
         self.assertEquals("fred", c1.get("cas3")[0])
 
+        # Flush All
+        c1.set("flush1", "foo")
+        c1.set("flush2", "bar")
+        c2.begin_pipeline()
+        c2.flush_all()
+        self.assertEquals("foo", c1.get("flush1")[0])
+        self.assertEquals("bar", c1.get("flush2")[0])
+        c2.finish_pipeline()
+        self.assertEquals(None, c1.get("flush1"))
+        self.assertEquals(None, c1.get("flush2"))
+
+
+    def testPipelineDoesNotAllowReads(self):
+        c = Client(MEMCACHED_ADDRESS)
+        c.connect()
+
+        c.begin_pipeline()
+
+        self.assertRaises(RuntimeError, c.get, "foo")
+        self.assertRaises(RuntimeError, c.gets, "foo")
+        self.assertRaises(RuntimeError, c.get_multi, ["foo"])
+        self.assertRaises(RuntimeError, c.gets_multi, ["foo"])
+        self.assertRaises(RuntimeError, c.version)
+        self.assertRaises(RuntimeError, c.stats)
 
 
 if __name__ == '__main__':

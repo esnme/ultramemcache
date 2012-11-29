@@ -585,6 +585,12 @@ bool Client::flushAll(time_t *expiration, bool async)
 
   m_writer.writeChars("\r\n", 2);
 
+  if (m_pipeline)
+  {
+    m_pipeline += 1;
+    return true;
+  }
+
   if (!sendWriteBuffer())
   {
     return false;

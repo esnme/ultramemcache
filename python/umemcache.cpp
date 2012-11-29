@@ -420,6 +420,11 @@ PyObject *Client_get(PyClient *self, PyObject *args)
     return NULL;
   }
 
+  if (self->client->isPipelined())
+  {
+    return PyErr_Format(PyExc_RuntimeError, "Operation cannot be performed inside a pipeline");
+  }
+
   self->client->getBegin();
 
   self->client->getKeyWrite(pKey, cbKey);
@@ -481,6 +486,11 @@ PyObject *Client_gets(PyClient *self, PyObject *args)
     return NULL;
   }
 
+  if (self->client->isPipelined())
+  {
+    return PyErr_Format(PyExc_RuntimeError, "Operation cannot be performed inside a pipeline");
+  }
+
   self->client->getsBegin();
 
   self->client->getKeyWrite(pKey, cbKey);
@@ -540,6 +550,11 @@ PyObject *Client_get_multi(PyClient *self, PyObject *okeys)
   size_t cbData;
   UINT64 cas;
   int flags;
+
+  if (self->client->isPipelined())
+  {
+    return PyErr_Format(PyExc_RuntimeError, "Operation cannot be performed inside a pipeline");
+  }
 
   self->client->getBegin();
 
@@ -621,6 +636,11 @@ PyObject *Client_gets_multi(PyClient *self, PyObject *okeys)
   size_t cbData;
   UINT64 cas;
   int flags;
+
+  if (self->client->isPipelined())
+  {
+    return PyErr_Format(PyExc_RuntimeError, "Operation cannot be performed inside a pipeline");
+  }
 
   self->client->getsBegin();
 
@@ -922,6 +942,11 @@ PyObject *Client_version(PyClient *self, PyObject *args)
   char *pVersion;
   size_t cbVersion;
 
+  if (self->client->isPipelined())
+  {
+    return PyErr_Format(PyExc_RuntimeError, "Operation cannot be performed inside a pipeline");
+  }
+
   if (!self->client->version(&pVersion, &cbVersion))
   {
     return PyErr_Format(PyExc_RuntimeError, "Could not retrieve version");
@@ -936,6 +961,11 @@ PyObject *Client_stats(PyClient *self, PyObject *args)
   char *pValue;
   size_t cbName;
   size_t cbValue;
+
+  if (self->client->isPipelined())
+  {
+    return PyErr_Format(PyExc_RuntimeError, "Operation cannot be performed inside a pipeline");
+  }
 
   if (!self->client->stats(NULL, 0))
   {
