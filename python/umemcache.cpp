@@ -160,7 +160,7 @@ int API_connect(SOCKETDESC *desc, const char *address, int port)
 
   PRINTMARK();
 
-  //PyTuple_SET_ITEM doesn't increment ref counter 
+  //PyTuple_SET_ITEM doesn't increment ref counter
   //Py_DECREF(PyTuple_GET_ITEM(args, 1));
   Py_DECREF(args);
   Py_DECREF(method);
@@ -354,7 +354,7 @@ PyObject *Client_command(PyClient *self, PFN_COMMAND cmd, PyObject *args)
 
   bool bAsync = async ? true : false;
 
-  if (!(self->client->*cmd)(pKey, cbKey, pData, cbData, expire, flags, async ? true : false, self->maxSize))
+  if (!(self->client->*cmd)(pKey, cbKey, pData, cbData, expire, flags, bAsync, self->maxSize))
   {
     if (!PyErr_Occurred())
     {
@@ -364,7 +364,7 @@ PyObject *Client_command(PyClient *self, PFN_COMMAND cmd, PyObject *args)
     return NULL;
   }
 
-  if (!async)
+  if (!self->client->isPipelined() && !async)
   {
     if (self->client->getResult(&pResult, &cbResult))
     {
@@ -694,6 +694,44 @@ PyObject *Client_gets_multi(PyClient *self, PyObject *okeys)
   return odict;
 }
 
+PyObject *Client_begin_pipeline(PyClient *self, PyObject *args)
+{
+  if (!self->client->pipelineBegin())
+  {
+    return PyErr_Format(PyExc_RuntimeError, "pipeline already started");
+  }
+
+  Py_RETURN_NONE;
+}
+
+PyObject *Client_abort_pipeline(PyClient *self, PyObject *args)
+{
+  self->client->pipelineAbort();
+  Py_RETURN_NONE;
+}
+
+PyObject *Client_finish_pipeline(PyClient *self, PyObject *args)
+{
+  char *pResult;
+  size_t cbResult;
+
+  if (!self->client->pipelineFlush())
+  {
+    return PyErr_Format(PyExc_RuntimeError, "error flushing pipeline");
+  }
+
+  PyObject *oresults = PyList_New(0);
+
+  while (self->client->getNextPipelineResult(&pResult, &cbResult))
+  {
+    PyObject *oresult = PyString_FromStringAndSize(pResult, cbResult);
+    PyList_Append(oresults, oresult);
+    Py_DECREF(oresult);
+  }
+
+  return oresults;
+}
+
 PyObject *Client_delete(PyClient *self, PyObject *args)
 {
   char *pResult;
@@ -701,7 +739,6 @@ PyObject *Client_delete(PyClient *self, PyObject *args)
   char *pKey;
   size_t cbKey;
   int expire = -1;
-  int flags = 0;
   int async = 0;
 
   if (!PyArg_ParseTuple (args, "s#|ib", &pKey, &cbKey, &expire, &async))
@@ -721,7 +758,7 @@ PyObject *Client_delete(PyClient *self, PyObject *args)
     return NULL;
   }
 
-  if (!async)
+  if (!self->client->isPipelined() && !async)
   {
     if (self->client->getResult(&pResult, &cbResult))
     {
@@ -768,7 +805,7 @@ PyObject *Client_cas(PyClient *self, PyObject *args)
     return NULL;
   }
 
-  if (!async)
+  if (!self->client->isPipelined() && !async)
   {
     if (self->client->getResult(&pResult, &cbResult))
     {
@@ -810,7 +847,7 @@ PyObject *Client_incr(PyClient *self, PyObject *args)
     return NULL;
   }
 
-  if (!async)
+  if (!self->client->isPipelined() && !async)
   {
     if (self->client->getResult(&pResult, &cbResult))
     {
@@ -858,7 +895,7 @@ PyObject *Client_decr(PyClient *self, PyObject *args)
     return NULL;
   }
 
-  if (!async)
+  if (!self->client->isPipelined() && !async)
   {
     if (self->client->getResult(&pResult, &cbResult))
     {
@@ -942,7 +979,7 @@ PyObject *Client_flush_all(PyClient *self, PyObject *args)
     return NULL;
   }
 
-  if (!async)
+  if (!self->client->isPipelined() && !async)
   {
     if (self->client->getResult(&pResult, &cbResult))
     {
@@ -1009,18 +1046,17 @@ static PyMethodDef Client_methods[] = {
   {"version", (PyCFunction)            Client_version,            METH_NOARGS, "def version(self)"},
   {"stats", (PyCFunction)        Client_stats, METH_NOARGS, "def stats(self)"},
   {"flush_all", (PyCFunction)        Client_flush_all, METH_VARARGS, "def flush_all(self, expiration = 0, async = False)"},
+  {"begin_pipeline", (PyCFunction)       Client_begin_pipeline, METH_NOARGS, "def begin_pipeline(self)"},
+  {"abort_pipeline", (PyCFunction)       Client_abort_pipeline, METH_NOARGS, "def abort_pipeline(self)"},
+  {"finish_pipeline", (PyCFunction)      Client_finish_pipeline, METH_NOARGS, "def finish_pipeline(self)"},
   {NULL}
 };
 
 static PyMemberDef Client_members[] = {
-    {"max_item_size", T_INT, offsetof(PyClient, maxSize), READONLY,
-     "Max item size"},
-    {"sock", T_OBJECT_EX, offsetof(PyClient, sock), READONLY,
-     "Socket instance"},
-    {"host", T_OBJECT_EX, offsetof(PyClient, host), READONLY,
-     "Host"},
-    {"port", T_INT, offsetof(PyClient, port), READONLY,
-     "Port"},
+    {"max_item_size", T_INT, offsetof(PyClient, maxSize), READONLY, "Max item size"},
+    {"sock", T_OBJECT_EX, offsetof(PyClient, sock), READONLY, "Socket instance"},
+    {"host", T_OBJECT_EX, offsetof(PyClient, host), READONLY, "Host"},
+    {"port", T_INT, offsetof(PyClient, port), READONLY, "Port"},
     {NULL}  /* Sentinel */
 };
 
@@ -1047,7 +1083,7 @@ static PyTypeObject ClientType = {
   0,                /* tp_setattro    */
   0,                /* tp_as_buffer   */
   Py_TPFLAGS_DEFAULT,        /* tp_flags       */
-  "Memcache client.\n\n" 
+  "Memcache client.\n\n"
   "Options:\n"
   "- address: memcache server address.\n"
   "- max_item_size: maximum size for an item in memcached.\n"

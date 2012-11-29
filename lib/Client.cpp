@@ -43,6 +43,7 @@ Client::Client (SOCKETDESC *sockdesc)
 {
   m_sock = sockdesc;
   m_error = "Unspecified error";
+  m_pipeline = 0;
 }
 
 Client::~Client (void)
@@ -53,7 +54,6 @@ Client::~Client (void)
 
 void Client::setError(const char *message)
 {
-  assert (m_error == NULL);
   m_error = message;
 }
 
@@ -187,6 +187,12 @@ bool Client::cas(const char *key, size_t cbKey, UINT64 casUnique, void *data, si
   m_writer.writeChars(data, cbData);
   m_writer.writeChars("\r\n", 2);
 
+  if (m_pipeline)
+  {
+    m_pipeline += 1;
+    return true;
+  }
+
   if (!sendWriteBuffer())
   {
     return false;
@@ -234,6 +240,12 @@ bool Client::command(const char *cmd, size_t cbCmd, const char *key, size_t cbKe
   m_writer.writeChars("\r\n", 2);
   m_writer.writeChars(data, cbData);
   m_writer.writeChars("\r\n", 2);
+
+  if (m_pipeline)
+  {
+    m_pipeline += 1;
+    return true;
+  }
 
   if (!sendWriteBuffer())
   {
@@ -298,6 +310,12 @@ bool Client::del(const char *key, size_t cbKey, time_t *expiration, bool async)
   }
   m_writer.writeChars("\r\n", 2);
 
+  if (m_pipeline)
+  {
+    m_pipeline += 1;
+    return true;
+  }
+
   if (!sendWriteBuffer())
   {
     return false;
@@ -330,6 +348,12 @@ bool Client::incr(const char *key, size_t cbKey, UINT64 increment, bool async)
   }
   m_writer.writeChars("\r\n", 2);
 
+  if (m_pipeline)
+  {
+    m_pipeline += 1;
+    return true;
+  }
+
   if (!sendWriteBuffer())
   {
     return false;
@@ -360,6 +384,12 @@ bool Client::decr(const char *key, size_t cbKey, UINT64 decrement, bool async)
     m_writer.writeChars(" noreply", 8);
   }
   m_writer.writeChars("\r\n", 2);
+
+  if (m_pipeline)
+  {
+    m_pipeline += 1;
+    return true;
+  }
 
   if (!sendWriteBuffer())
   {
@@ -405,6 +435,58 @@ bool Client::getFlush(void)
   }
 
   return true;
+}
+
+bool Client::pipelineBegin(void)
+{
+  if (m_pipeline)
+  {
+    return false;
+  }
+
+  m_pipeline = 1;
+  m_writer.reset();
+  return true;
+}
+
+void Client::pipelineReset(void)
+{
+  m_pipeline = 0;
+  m_writer.reset();
+}
+
+bool Client::pipelineAbort(void)
+{
+  pipelineReset();
+  return true;
+}
+
+bool Client::pipelineFlush(void)
+{
+  if (!m_pipeline || !sendWriteBuffer())
+  {
+    pipelineReset();
+    return false;
+  }
+
+  return true;
+}
+
+bool Client::getNextPipelineResult(char **pData, size_t *cbSize)
+{
+  if (m_pipeline <= 1 || !readLine())
+  {
+    pipelineReset();
+    return false;
+  }
+
+  m_pipeline -= 1;
+  return getResult(pData, cbSize);
+}
+
+bool Client::isPipelined(void)
+{
+  return m_pipeline > 0;
 }
 
 bool Client::version(char **pVersion, size_t *cbVersion)

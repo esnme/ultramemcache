@@ -71,6 +71,11 @@ public:
   bool getFlush(void);
   bool getReadNext(char **key, size_t *cbKey, char **data, size_t *cbData, int *flags, UINT64 *cas, bool *bError);
 
+  bool pipelineBegin(void);
+  bool pipelineFlush(void);
+  bool pipelineAbort(void);
+  bool getNextPipelineResult(char **pData, size_t *cbSize);
+  bool isPipelined(void);
 
   bool set(const char *key, size_t cbKey, void *data, size_t cbData, time_t expiration, int flags, bool async, size_t maxSize);
   bool del(const char *key, size_t cbKey, time_t *expiration, bool async);
@@ -89,12 +94,13 @@ public:
   bool flushAll(time_t *expiration, bool async);
   bool getResult(char **pData, size_t *cbSize);
   const char *getError(void);
+  bool sendWriteBuffer(void);
 
 private:
   bool command(const char *cmd, size_t cbCmd, const char *key, size_t cbKey, void *data, size_t cbData, time_t expiration, int flags, bool async, size_t maxSize);
-  bool sendWriteBuffer(void);
   bool readLine(void);
-
+  
+  void pipelineReset(void);
   void setError(const char *message);
 
 private:
@@ -103,4 +109,5 @@ private:
   PacketReader m_reader;
 
   const char *m_error;
+  int m_pipeline;
 };
