@@ -360,7 +360,7 @@ PyObject *Client_command(PyClient *self, PFN_COMMAND cmd, PyObject *args)
   {
     if (!PyErr_Occurred())
     {
-      return PyErr_Format(umemcache_MemcachedError, "Operation failed");
+      return PyErr_Format(umemcache_MemcachedError, "umemcache: %s", self->client->getError());
     }
 
     return NULL;

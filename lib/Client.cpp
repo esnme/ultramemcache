@@ -33,6 +33,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <stdio.h>
 #include <assert.h>
 #include <sstream>
+#include <string.h>
 
 //#define PRINTMARK() fprintf(stderr, "%s: MARK(%d)\n", __FILE__, __LINE__)		
 #define PRINTMARK() 		
@@ -78,8 +79,18 @@ bool Client::connect(const char *address, int port)
 
 bool Client::readLine(void)
 {
-  while (!m_reader.haveLine())
+  while (true)
   {
+    if (m_reader.haveLine())
+    {
+      if (extractErrorFromReader())
+      {
+        return false;
+      }
+
+      return true;
+    }
+
     size_t bytesToRead = m_reader.getEndPtr () - m_reader.getWritePtr();
 
     if (bytesToRead > 65536)
@@ -257,7 +268,6 @@ bool Client::command(const char *cmd, size_t cbCmd, const char *key, size_t cbKe
   {
     return true;
   }
-
 
   if (!readLine())
   {
@@ -609,10 +619,47 @@ bool Client::flushAll(time_t *expiration, bool async)
   return true;
 }
 
+bool Client::extractErrorFromReader(void)
+{
+  static const char *RESPONSE_ERROR = "ERROR";
+  static const char *RESPONSE_CLIENT_ERROR = "CLIENT_ERROR";
+  static const char *RESPONSE_SERVER_ERROR = "SERVER_ERROR";
+  static const size_t RESPONSE_ERROR_SIZE = strlen(RESPONSE_ERROR);
+  static const size_t RESPONSE_CLIENT_ERROR_SIZE = strlen(RESPONSE_CLIENT_ERROR);
+  static const size_t RESPONSE_SERVER_ERROR_SIZE = strlen(RESPONSE_SERVER_ERROR);
+
+  if (m_reader.beginsWithString(RESPONSE_ERROR, RESPONSE_ERROR_SIZE) || 
+      m_reader.beginsWithString(RESPONSE_CLIENT_ERROR, RESPONSE_CLIENT_ERROR_SIZE) || 
+      m_reader.beginsWithString(RESPONSE_SERVER_ERROR, RESPONSE_SERVER_ERROR_SIZE))
+  {
+    size_t cbError = 0;
+    char *errorString = (char *)m_reader.readUntil(&cbError, '\r');
+
+    if (cbError > 1)
+    {
+      errorString[cbError] = '\0';
+    }
+    else
+    {
+      errorString = "malformed error received";
+    }
+
+    setError(errorString);
+    m_reader.skip();
+    return true;
+  }
+
+  return false;
+}
 
 
 bool Client::getReadNext(char **key, size_t *cbKey, char **data, size_t *cbData, int *_flags, UINT64 *_cas, bool *bError)
 {
+  static const char *END_OF_RESPONSE = "END\r\n";
+  static const char *BEGIN_OF_VALUE = "VALUE ";
+  static const size_t END_OF_RESPONSE_SIZE = strlen(END_OF_RESPONSE);
+  static const size_t BEGIN_OF_VALUE_SIZE = strlen(BEGIN_OF_VALUE);
+
   *bError = false;
 
   if (!readLine())
@@ -621,13 +668,22 @@ bool Client::getReadNext(char **key, size_t *cbKey, char **data, size_t *cbData,
     return false;
   }
 
-  if (m_reader.readBytes(6) == NULL)
+  if (m_reader.beginsWithString(END_OF_RESPONSE, END_OF_RESPONSE_SIZE))
   {
-    // "END\r\n" was recieved
     m_reader.skip();
     return false;
   }
 
+  const char *valuePrefix = (const char *)m_reader.readBytes(BEGIN_OF_VALUE_SIZE);
+
+  if (valuePrefix == NULL || memcmp(valuePrefix, BEGIN_OF_VALUE, BEGIN_OF_VALUE_SIZE) != 0)
+  {
+    *bError = true;
+    setError("malformed response: expected VALUE");
+    m_reader.skip();  
+    return false;
+  }
+  
   *key = (char *) m_reader.readUntil(cbKey, ' ');
 
   if (*key == NULL)
@@ -637,7 +693,6 @@ bool Client::getReadNext(char **key, size_t *cbKey, char **data, size_t *cbData,
   }
 
   *(*key + *cbKey) = '\0';
-
 
   if (m_reader.readBytes(1) == NULL)
   {

@@ -102,6 +102,7 @@ private:
   
   void pipelineReset(void);
   void setError(const char *message);
+  bool extractErrorFromReader(void);
 
 private:
   SOCKETDESC *m_sock;
