@@ -65,6 +65,7 @@ public:
 
   size_t getBytesLeft();
   void rewind(size_t num);
+  bool beginsWithString(const char *str, size_t cbsize);
 };
 
 #endif

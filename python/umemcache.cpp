@@ -64,6 +64,8 @@ typedef struct {
   size_t maxSize;
 } PyClient;
 
+static PyObject *umemcache_MemcachedError;
+
 int API_send(SOCKETDESC *desc, void *data, size_t cbData)
 {
   PyClient *client = (PyClient *) desc->prv;
@@ -160,7 +162,7 @@ int API_connect(SOCKETDESC *desc, const char *address, int port)
 
   PRINTMARK();
 
-  //PyTuple_SET_ITEM doesn't increment ref counter 
+  //PyTuple_SET_ITEM doesn't increment ref counter
   //Py_DECREF(PyTuple_GET_ITEM(args, 1));
   Py_DECREF(args);
   Py_DECREF(method);
@@ -263,7 +265,7 @@ int Client_init(PyClient *self, PyObject *args, PyObject *kwargs)
 
   if (offset == NULL)
   {
-    PyErr_Format(PyExc_RuntimeError, "Invalid argument for address");
+    PyErr_Format(umemcache_MemcachedError, "Invalid argument for address");
     return -1;
   }
 
@@ -304,7 +306,7 @@ PyObject *Client_connect(PyClient *self, PyObject *args)
 {
   if (self->desc.prv == NULL)
   {
-    return PyErr_Format(PyExc_RuntimeError, "Client can not be reconnected");
+    return PyErr_Format(umemcache_MemcachedError, "Client can not be reconnected");
   }
 
   if (!self->client->connect (PyString_AS_STRING(self->host), self->port))
@@ -354,17 +356,17 @@ PyObject *Client_command(PyClient *self, PFN_COMMAND cmd, PyObject *args)
 
   bool bAsync = async ? true : false;
 
-  if (!(self->client->*cmd)(pKey, cbKey, pData, cbData, expire, flags, async ? true : false, self->maxSize))
+  if (!(self->client->*cmd)(pKey, cbKey, pData, cbData, expire, flags, bAsync, self->maxSize))
   {
     if (!PyErr_Occurred())
     {
-      return PyErr_Format(PyExc_RuntimeError, "Operation failed");
+      return PyErr_Format(umemcache_MemcachedError, "umemcache: %s", self->client->getError());
     }
 
     return NULL;
   }
 
-  if (!async)
+  if (!self->client->isPipelined() && !async)
   {
     if (self->client->getResult(&pResult, &cbResult))
     {
@@ -372,7 +374,7 @@ PyObject *Client_command(PyClient *self, PFN_COMMAND cmd, PyObject *args)
     }
     else
     {
-      return PyErr_Format(PyExc_RuntimeError, "Could not retrieve result");
+      return PyErr_Format(umemcache_MemcachedError, "Could not retrieve result");
     }
   }
 
@@ -420,6 +422,11 @@ PyObject *Client_get(PyClient *self, PyObject *args)
     return NULL;
   }
 
+  if (self->client->isPipelined())
+  {
+    return PyErr_Format(umemcache_MemcachedError, "Operation cannot be performed inside a pipeline");
+  }
+
   self->client->getBegin();
 
   self->client->getKeyWrite(pKey, cbKey);
@@ -433,7 +440,7 @@ PyObject *Client_get(PyClient *self, PyObject *args)
     {
       if (!PyErr_Occurred())
       {
-        return PyErr_Format(PyExc_RuntimeError, "umemcache: %s", self->client->getError());
+        return PyErr_Format(umemcache_MemcachedError, "umemcache: %s", self->client->getError());
       }
       return NULL;
     }
@@ -456,7 +463,7 @@ PyObject *Client_get(PyClient *self, PyObject *args)
 
     if (!PyErr_Occurred())
     {
-      return PyErr_Format(PyExc_RuntimeError, "umemcache: %s", self->client->getError());
+      return PyErr_Format(umemcache_MemcachedError, "umemcache: %s", self->client->getError());
     }
 
     return NULL;
@@ -481,6 +488,11 @@ PyObject *Client_gets(PyClient *self, PyObject *args)
     return NULL;
   }
 
+  if (self->client->isPipelined())
+  {
+    return PyErr_Format(umemcache_MemcachedError, "Operation cannot be performed inside a pipeline");
+  }
+
   self->client->getsBegin();
 
   self->client->getKeyWrite(pKey, cbKey);
@@ -494,7 +506,7 @@ PyObject *Client_gets(PyClient *self, PyObject *args)
     {
       if (!PyErr_Occurred())
       {
-        return PyErr_Format(PyExc_RuntimeError, "umemcache: %s", self->client->getError());
+        return PyErr_Format(umemcache_MemcachedError, "umemcache: %s", self->client->getError());
       }
       return NULL;
     }
@@ -521,7 +533,7 @@ PyObject *Client_gets(PyClient *self, PyObject *args)
 
     if (!PyErr_Occurred())
     {
-      return PyErr_Format(PyExc_RuntimeError, "umemcache: %s", self->client->getError());
+      return PyErr_Format(umemcache_MemcachedError, "umemcache: %s", self->client->getError());
     }
 
     return NULL;
@@ -540,6 +552,11 @@ PyObject *Client_get_multi(PyClient *self, PyObject *okeys)
   size_t cbData;
   UINT64 cas;
   int flags;
+
+  if (self->client->isPipelined())
+  {
+    return PyErr_Format(umemcache_MemcachedError, "Operation cannot be performed inside a pipeline");
+  }
 
   self->client->getBegin();
 
@@ -602,7 +619,7 @@ PyObject *Client_get_multi(PyClient *self, PyObject *okeys)
 
     if (!PyErr_Occurred())
     {
-      return PyErr_Format(PyExc_RuntimeError, "umemcache: %s", self->client->getError());
+      return PyErr_Format(umemcache_MemcachedError, "umemcache: %s", self->client->getError());
     }
 
     return NULL;
@@ -621,6 +638,11 @@ PyObject *Client_gets_multi(PyClient *self, PyObject *okeys)
   size_t cbData;
   UINT64 cas;
   int flags;
+
+  if (self->client->isPipelined())
+  {
+    return PyErr_Format(umemcache_MemcachedError, "Operation cannot be performed inside a pipeline");
+  }
 
   self->client->getsBegin();
 
@@ -685,13 +707,51 @@ PyObject *Client_gets_multi(PyClient *self, PyObject *okeys)
 
     if (!PyErr_Occurred())
     {
-      return PyErr_Format(PyExc_RuntimeError, "umemcache: %s", self->client->getError());
+      return PyErr_Format(umemcache_MemcachedError, "umemcache: %s", self->client->getError());
     }
 
     return NULL;
   }
 
   return odict;
+}
+
+PyObject *Client_begin_pipeline(PyClient *self, PyObject *args)
+{
+  if (!self->client->pipelineBegin())
+  {
+    return PyErr_Format(umemcache_MemcachedError, "pipeline already started");
+  }
+
+  Py_RETURN_NONE;
+}
+
+PyObject *Client_abort_pipeline(PyClient *self, PyObject *args)
+{
+  self->client->pipelineAbort();
+  Py_RETURN_NONE;
+}
+
+PyObject *Client_finish_pipeline(PyClient *self, PyObject *args)
+{
+  char *pResult;
+  size_t cbResult;
+
+  if (!self->client->pipelineFlush())
+  {
+    return PyErr_Format(umemcache_MemcachedError, "error flushing pipeline");
+  }
+
+  PyObject *oresults = PyList_New(0);
+
+  while (self->client->getNextPipelineResult(&pResult, &cbResult))
+  {
+    PyObject *oresult = PyString_FromStringAndSize(pResult, cbResult);
+    PyList_Append(oresults, oresult);
+    Py_DECREF(oresult);
+  }
+
+  return oresults;
 }
 
 PyObject *Client_delete(PyClient *self, PyObject *args)
@@ -701,7 +761,6 @@ PyObject *Client_delete(PyClient *self, PyObject *args)
   char *pKey;
   size_t cbKey;
   int expire = -1;
-  int flags = 0;
   int async = 0;
 
   if (!PyArg_ParseTuple (args, "s#|ib", &pKey, &cbKey, &expire, &async))
@@ -715,13 +774,13 @@ PyObject *Client_delete(PyClient *self, PyObject *args)
   {
     if (!PyErr_Occurred())
     {
-      return PyErr_Format(PyExc_RuntimeError, "umemcache: %s", self->client->getError());
+      return PyErr_Format(umemcache_MemcachedError, "umemcache: %s", self->client->getError());
     }
 
     return NULL;
   }
 
-  if (!async)
+  if (!self->client->isPipelined() && !async)
   {
     if (self->client->getResult(&pResult, &cbResult))
     {
@@ -729,7 +788,7 @@ PyObject *Client_delete(PyClient *self, PyObject *args)
     }
     else
     {
-      return PyErr_Format(PyExc_RuntimeError, "Could not retrieve result");
+      return PyErr_Format(umemcache_MemcachedError, "Could not retrieve result");
     }
   }
 
@@ -762,13 +821,13 @@ PyObject *Client_cas(PyClient *self, PyObject *args)
   {
     if (!PyErr_Occurred())
     {
-      return PyErr_Format(PyExc_RuntimeError, "umemcache: %s", self->client->getError());
+      return PyErr_Format(umemcache_MemcachedError, "umemcache: %s", self->client->getError());
     }
 
     return NULL;
   }
 
-  if (!async)
+  if (!self->client->isPipelined() && !async)
   {
     if (self->client->getResult(&pResult, &cbResult))
     {
@@ -776,7 +835,7 @@ PyObject *Client_cas(PyClient *self, PyObject *args)
     }
     else
     {
-      return PyErr_Format(PyExc_RuntimeError, "Could not retrieve result");
+      return PyErr_Format(umemcache_MemcachedError, "Could not retrieve result");
     }
   }
 
@@ -804,13 +863,13 @@ PyObject *Client_incr(PyClient *self, PyObject *args)
   {
     if (!PyErr_Occurred())
     {
-      return PyErr_Format(PyExc_RuntimeError, "umemcache: %s", self->client->getError());
+      return PyErr_Format(umemcache_MemcachedError, "umemcache: %s", self->client->getError());
     }
 
     return NULL;
   }
 
-  if (!async)
+  if (!self->client->isPipelined() && !async)
   {
     if (self->client->getResult(&pResult, &cbResult))
     {
@@ -818,14 +877,14 @@ PyObject *Client_incr(PyClient *self, PyObject *args)
 
       if (strncmp (pResult, "CLIENT_ERROR", 12) == 0)
       {
-        return PyErr_Format(PyExc_RuntimeError, pResult);
+        return PyErr_Format(umemcache_MemcachedError, pResult);
       }
 
       return PyString_FromStringAndSize(pResult, cbResult);
     }
     else
     {
-      return PyErr_Format(PyExc_RuntimeError, "Could not retrieve result");
+      return PyErr_Format(umemcache_MemcachedError, "Could not retrieve result");
     }
   }
 
@@ -852,13 +911,13 @@ PyObject *Client_decr(PyClient *self, PyObject *args)
   {
     if (!PyErr_Occurred())
     {
-      return PyErr_Format(PyExc_RuntimeError, "umemcache: %s", self->client->getError());
+      return PyErr_Format(umemcache_MemcachedError, "umemcache: %s", self->client->getError());
     }
 
     return NULL;
   }
 
-  if (!async)
+  if (!self->client->isPipelined() && !async)
   {
     if (self->client->getResult(&pResult, &cbResult))
     {
@@ -866,14 +925,14 @@ PyObject *Client_decr(PyClient *self, PyObject *args)
 
       if (strncmp (pResult, "CLIENT_ERROR", 12) == 0)
       {
-        return PyErr_Format(PyExc_RuntimeError, pResult);
+        return PyErr_Format(umemcache_MemcachedError, pResult);
       }
 
       return PyString_FromStringAndSize(pResult, cbResult);
     }
     else
     {
-      return PyErr_Format(PyExc_RuntimeError, "Could not retrieve result");
+      return PyErr_Format(umemcache_MemcachedError, "Could not retrieve result");
     }
   }
 
@@ -885,9 +944,14 @@ PyObject *Client_version(PyClient *self, PyObject *args)
   char *pVersion;
   size_t cbVersion;
 
+  if (self->client->isPipelined())
+  {
+    return PyErr_Format(umemcache_MemcachedError, "Operation cannot be performed inside a pipeline");
+  }
+
   if (!self->client->version(&pVersion, &cbVersion))
   {
-    return PyErr_Format(PyExc_RuntimeError, "Could not retrieve version");
+    return PyErr_Format(umemcache_MemcachedError, "Could not retrieve version");
   }
 
   return PyString_FromStringAndSize(pVersion, cbVersion);
@@ -900,9 +964,14 @@ PyObject *Client_stats(PyClient *self, PyObject *args)
   size_t cbName;
   size_t cbValue;
 
+  if (self->client->isPipelined())
+  {
+    return PyErr_Format(umemcache_MemcachedError, "Operation cannot be performed inside a pipeline");
+  }
+
   if (!self->client->stats(NULL, 0))
   {
-    return PyErr_Format(PyExc_RuntimeError, "Stats command failed");
+    return PyErr_Format(umemcache_MemcachedError, "Stats command failed");
   }
 
   PyObject *odict = PyDict_New();
@@ -936,13 +1005,13 @@ PyObject *Client_flush_all(PyClient *self, PyObject *args)
   {
     if (!PyErr_Occurred())
     {
-      return PyErr_Format(PyExc_RuntimeError, "umemcache: %s", self->client->getError());
+      return PyErr_Format(umemcache_MemcachedError, "umemcache: %s", self->client->getError());
     }
 
     return NULL;
   }
 
-  if (!async)
+  if (!self->client->isPipelined() && !async)
   {
     if (self->client->getResult(&pResult, &cbResult))
     {
@@ -950,7 +1019,7 @@ PyObject *Client_flush_all(PyClient *self, PyObject *args)
     }
     else
     {
-      return PyErr_Format(PyExc_RuntimeError, "Could not retrieve result");
+      return PyErr_Format(umemcache_MemcachedError, "Could not retrieve result");
     }
   }
 
@@ -1009,18 +1078,17 @@ static PyMethodDef Client_methods[] = {
   {"version", (PyCFunction)            Client_version,            METH_NOARGS, "def version(self)"},
   {"stats", (PyCFunction)        Client_stats, METH_NOARGS, "def stats(self)"},
   {"flush_all", (PyCFunction)        Client_flush_all, METH_VARARGS, "def flush_all(self, expiration = 0, async = False)"},
+  {"begin_pipeline", (PyCFunction)       Client_begin_pipeline, METH_NOARGS, "def begin_pipeline(self)"},
+  {"abort_pipeline", (PyCFunction)       Client_abort_pipeline, METH_NOARGS, "def abort_pipeline(self)"},
+  {"finish_pipeline", (PyCFunction)      Client_finish_pipeline, METH_NOARGS, "def finish_pipeline(self)"},
   {NULL}
 };
 
 static PyMemberDef Client_members[] = {
-    {"max_item_size", T_INT, offsetof(PyClient, maxSize), READONLY,
-     "Max item size"},
-    {"sock", T_OBJECT_EX, offsetof(PyClient, sock), READONLY,
-     "Socket instance"},
-    {"host", T_OBJECT_EX, offsetof(PyClient, host), READONLY,
-     "Host"},
-    {"port", T_INT, offsetof(PyClient, port), READONLY,
-     "Port"},
+    {"max_item_size", T_INT, offsetof(PyClient, maxSize), READONLY, "Max item size"},
+    {"sock", T_OBJECT_EX, offsetof(PyClient, sock), READONLY, "Socket instance"},
+    {"host", T_OBJECT_EX, offsetof(PyClient, host), READONLY, "Host"},
+    {"port", T_INT, offsetof(PyClient, port), READONLY, "Port"},
     {NULL}  /* Sentinel */
 };
 
@@ -1047,7 +1115,7 @@ static PyTypeObject ClientType = {
   0,                /* tp_setattro    */
   0,                /* tp_as_buffer   */
   Py_TPFLAGS_DEFAULT,        /* tp_flags       */
-  "Memcache client.\n\n" 
+  "Memcache client.\n\n"
   "Options:\n"
   "- address: memcache server address.\n"
   "- max_item_size: maximum size for an item in memcached.\n"
@@ -1079,8 +1147,7 @@ PyMODINIT_FUNC
 {
   PyObject* m;
 
-  m = Py_InitModule3("umemcache", methods,
-    "");
+  m = Py_InitModule3("umemcache", methods, "");
   if (m == NULL)
     return;
 
@@ -1089,4 +1156,8 @@ PyMODINIT_FUNC
     return;
   Py_INCREF(&ClientType);
   PyModule_AddObject(m, "Client", (PyObject *)&ClientType);
+
+  umemcache_MemcachedError = PyErr_NewException("umemcache.MemcachedError",
+      PyExc_RuntimeError, NULL); 
+  PyModule_AddObject(m, "MemcachedError", (PyObject *)umemcache_MemcachedError);
 }
