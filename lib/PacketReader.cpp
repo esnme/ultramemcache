@@ -34,6 +34,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "socketdefs.h"
 
 #include <stdio.h>
+#include <string.h>
 
 #define BYTEORDER_UINT16(_x) (_x)
 #define BYTEORDER_UINT32(_x) (_x)
@@ -109,6 +110,15 @@ char *PacketReader::getEndPtr()
 
 extern void PrintBuffer(FILE *file, void *_offset, size_t len, int perRow);
 
+bool PacketReader::beginsWithString(const char *str, size_t cbsize)
+{
+  if (m_readCursor + cbsize > m_packetEnd)
+  {
+    return false;
+  }
+
+  return memcmp(m_readCursor, str, cbsize) == 0;
+}
 
 bool PacketReader::readNumeric (UINT64 *value)
 {

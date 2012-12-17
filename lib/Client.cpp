@@ -33,6 +33,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <stdio.h>
 #include <assert.h>
 #include <sstream>
+#include <string.h>
 
 //#define PRINTMARK() fprintf(stderr, "%s: MARK(%d)\n", __FILE__, __LINE__)		
 #define PRINTMARK() 		
@@ -43,6 +44,7 @@ Client::Client (SOCKETDESC *sockdesc)
 {
   m_sock = sockdesc;
   m_error = "Unspecified error";
+  m_pipeline = 0;
 }
 
 Client::~Client (void)
@@ -53,7 +55,6 @@ Client::~Client (void)
 
 void Client::setError(const char *message)
 {
-  assert (m_error == NULL);
   m_error = message;
 }
 
@@ -78,8 +79,18 @@ bool Client::connect(const char *address, int port)
 
 bool Client::readLine(void)
 {
-  while (!m_reader.haveLine())
+  while (true)
   {
+    if (m_reader.haveLine())
+    {
+      if (extractErrorFromReader())
+      {
+        return false;
+      }
+
+      return true;
+    }
+
     size_t bytesToRead = m_reader.getEndPtr () - m_reader.getWritePtr();
 
     if (bytesToRead > 65536)
@@ -187,6 +198,12 @@ bool Client::cas(const char *key, size_t cbKey, UINT64 casUnique, void *data, si
   m_writer.writeChars(data, cbData);
   m_writer.writeChars("\r\n", 2);
 
+  if (m_pipeline)
+  {
+    m_pipeline += 1;
+    return true;
+  }
+
   if (!sendWriteBuffer())
   {
     return false;
@@ -235,6 +252,12 @@ bool Client::command(const char *cmd, size_t cbCmd, const char *key, size_t cbKe
   m_writer.writeChars(data, cbData);
   m_writer.writeChars("\r\n", 2);
 
+  if (m_pipeline)
+  {
+    m_pipeline += 1;
+    return true;
+  }
+
   if (!sendWriteBuffer())
   {
     PRINTMARK();
@@ -245,7 +268,6 @@ bool Client::command(const char *cmd, size_t cbCmd, const char *key, size_t cbKe
   {
     return true;
   }
-
 
   if (!readLine())
   {
@@ -298,6 +320,12 @@ bool Client::del(const char *key, size_t cbKey, time_t *expiration, bool async)
   }
   m_writer.writeChars("\r\n", 2);
 
+  if (m_pipeline)
+  {
+    m_pipeline += 1;
+    return true;
+  }
+
   if (!sendWriteBuffer())
   {
     return false;
@@ -330,6 +358,12 @@ bool Client::incr(const char *key, size_t cbKey, UINT64 increment, bool async)
   }
   m_writer.writeChars("\r\n", 2);
 
+  if (m_pipeline)
+  {
+    m_pipeline += 1;
+    return true;
+  }
+
   if (!sendWriteBuffer())
   {
     return false;
@@ -360,6 +394,12 @@ bool Client::decr(const char *key, size_t cbKey, UINT64 decrement, bool async)
     m_writer.writeChars(" noreply", 8);
   }
   m_writer.writeChars("\r\n", 2);
+
+  if (m_pipeline)
+  {
+    m_pipeline += 1;
+    return true;
+  }
 
   if (!sendWriteBuffer())
   {
@@ -405,6 +445,58 @@ bool Client::getFlush(void)
   }
 
   return true;
+}
+
+bool Client::pipelineBegin(void)
+{
+  if (m_pipeline)
+  {
+    return false;
+  }
+
+  m_pipeline = 1;
+  m_writer.reset();
+  return true;
+}
+
+void Client::pipelineReset(void)
+{
+  m_pipeline = 0;
+  m_writer.reset();
+}
+
+bool Client::pipelineAbort(void)
+{
+  pipelineReset();
+  return true;
+}
+
+bool Client::pipelineFlush(void)
+{
+  if (!m_pipeline || !sendWriteBuffer())
+  {
+    pipelineReset();
+    return false;
+  }
+
+  return true;
+}
+
+bool Client::getNextPipelineResult(char **pData, size_t *cbSize)
+{
+  if (m_pipeline <= 1 || !readLine())
+  {
+    pipelineReset();
+    return false;
+  }
+
+  m_pipeline -= 1;
+  return getResult(pData, cbSize);
+}
+
+bool Client::isPipelined(void)
+{
+  return m_pipeline > 0;
 }
 
 bool Client::version(char **pVersion, size_t *cbVersion)
@@ -503,6 +595,12 @@ bool Client::flushAll(time_t *expiration, bool async)
 
   m_writer.writeChars("\r\n", 2);
 
+  if (m_pipeline)
+  {
+    m_pipeline += 1;
+    return true;
+  }
+
   if (!sendWriteBuffer())
   {
     return false;
@@ -521,10 +619,47 @@ bool Client::flushAll(time_t *expiration, bool async)
   return true;
 }
 
+bool Client::extractErrorFromReader(void)
+{
+  static const char *RESPONSE_ERROR = "ERROR";
+  static const char *RESPONSE_CLIENT_ERROR = "CLIENT_ERROR";
+  static const char *RESPONSE_SERVER_ERROR = "SERVER_ERROR";
+  static const size_t RESPONSE_ERROR_SIZE = strlen(RESPONSE_ERROR);
+  static const size_t RESPONSE_CLIENT_ERROR_SIZE = strlen(RESPONSE_CLIENT_ERROR);
+  static const size_t RESPONSE_SERVER_ERROR_SIZE = strlen(RESPONSE_SERVER_ERROR);
+
+  if (m_reader.beginsWithString(RESPONSE_ERROR, RESPONSE_ERROR_SIZE) || 
+      m_reader.beginsWithString(RESPONSE_CLIENT_ERROR, RESPONSE_CLIENT_ERROR_SIZE) || 
+      m_reader.beginsWithString(RESPONSE_SERVER_ERROR, RESPONSE_SERVER_ERROR_SIZE))
+  {
+    size_t cbError = 0;
+    char *errorString = (char *)m_reader.readUntil(&cbError, '\r');
+
+    if (cbError > 1)
+    {
+      errorString[cbError] = '\0';
+    }
+    else
+    {
+      errorString = "malformed error received";
+    }
+
+    setError(errorString);
+    m_reader.skip();
+    return true;
+  }
+
+  return false;
+}
 
 
 bool Client::getReadNext(char **key, size_t *cbKey, char **data, size_t *cbData, int *_flags, UINT64 *_cas, bool *bError)
 {
+  static const char *END_OF_RESPONSE = "END\r\n";
+  static const char *BEGIN_OF_VALUE = "VALUE ";
+  static const size_t END_OF_RESPONSE_SIZE = strlen(END_OF_RESPONSE);
+  static const size_t BEGIN_OF_VALUE_SIZE = strlen(BEGIN_OF_VALUE);
+
   *bError = false;
 
   if (!readLine())
@@ -533,13 +668,22 @@ bool Client::getReadNext(char **key, size_t *cbKey, char **data, size_t *cbData,
     return false;
   }
 
-  if (m_reader.readBytes(6) == NULL)
+  if (m_reader.beginsWithString(END_OF_RESPONSE, END_OF_RESPONSE_SIZE))
   {
-    // "END\r\n" was recieved
     m_reader.skip();
     return false;
   }
 
+  const char *valuePrefix = (const char *)m_reader.readBytes(BEGIN_OF_VALUE_SIZE);
+
+  if (valuePrefix == NULL || memcmp(valuePrefix, BEGIN_OF_VALUE, BEGIN_OF_VALUE_SIZE) != 0)
+  {
+    *bError = true;
+    setError("malformed response: expected VALUE");
+    m_reader.skip();  
+    return false;
+  }
+  
   *key = (char *) m_reader.readUntil(cbKey, ' ');
 
   if (*key == NULL)
@@ -549,7 +693,6 @@ bool Client::getReadNext(char **key, size_t *cbKey, char **data, size_t *cbData,
   }
 
   *(*key + *cbKey) = '\0';
-
 
   if (m_reader.readBytes(1) == NULL)
   {
