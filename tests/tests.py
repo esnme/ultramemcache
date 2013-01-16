@@ -403,6 +403,12 @@ class Testumemcache(unittest.TestCase):
         for attr in ('sock', 'host', 'port'):
             self.assertRaises(TypeError, setattr, c, attr, 'booo')
 
+    def testTimeout(self):
+        timeout = 1.5
+        c = Client(MEMCACHED_ADDRESS)
+        c.set_timeout(timeout)
+        self.assertAlmostEqual(timeout, c.get_timeout())
+
     def testPipeline(self):
         c1 = Client(MEMCACHED_ADDRESS)
         c2 = Client(MEMCACHED_ADDRESS)
