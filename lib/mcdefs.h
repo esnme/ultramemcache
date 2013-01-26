@@ -36,8 +36,9 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <windows.h>
 #else
 #include <sys/types.h>
-typedef u_int64_t UINT64;
-typedef u_int8_t UINT8;
+#include <stdint.h>
+typedef uint64_t UINT64;
+typedef uint8_t UINT8;
 #endif
 
 #endif
