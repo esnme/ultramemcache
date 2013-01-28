@@ -1026,6 +1026,38 @@ PyObject *Client_flush_all(PyClient *self, PyObject *args)
   Py_RETURN_NONE;
 }
 
+PyObject *Client_set_timeout(PyClient *self, PyObject *args)
+{
+
+  PyObject *timeout;
+
+  if (!PyArg_ParseTuple (args, "O", &timeout))
+  {
+    return NULL;
+  }
+
+  PyObject *method = PyString_FromString("settimeout");
+  PyObject *res = PyObject_CallMethodObjArgs(self->sock, method, timeout, NULL);
+
+  PRINTMARK();
+
+  Py_DECREF(method);
+
+  return res;
+}
+
+PyObject *Client_get_timeout(PyClient *self, PyObject *args)
+{
+
+  PyObject *method = PyString_FromString("gettimeout");
+  PyObject *res = PyObject_CallMethodObjArgs(self->sock, method, NULL);
+
+  PRINTMARK();
+
+  Py_DECREF(method);
+
+  return res;
+}
 
 
 
@@ -1078,6 +1110,8 @@ static PyMethodDef Client_methods[] = {
   {"version", (PyCFunction)            Client_version,            METH_NOARGS, "def version(self)"},
   {"stats", (PyCFunction)        Client_stats, METH_NOARGS, "def stats(self)"},
   {"flush_all", (PyCFunction)        Client_flush_all, METH_VARARGS, "def flush_all(self, expiration = 0, async = False)"},
+  {"set_timeout", (PyCFunction)       Client_set_timeout, METH_VARARGS, "def set_timeout(self, value)"},
+  {"get_timeout", (PyCFunction)       Client_get_timeout, METH_NOARGS, "def get_timeout(self)"},
   {"begin_pipeline", (PyCFunction)       Client_begin_pipeline, METH_NOARGS, "def begin_pipeline(self)"},
   {"abort_pipeline", (PyCFunction)       Client_abort_pipeline, METH_NOARGS, "def abort_pipeline(self)"},
   {"finish_pipeline", (PyCFunction)      Client_finish_pipeline, METH_NOARGS, "def finish_pipeline(self)"},
