@@ -425,9 +425,14 @@ class Testumemcache(unittest.TestCase):
         c1.connect()
         c2.connect()
         c1.begin_pipeline()
+
+        try:
+            while True:
+                c1.incr("counter", 10)
+        except(OverflowError):
+            return
+        self.assertFalse("Expected exception")
         
-        while True:
-            c1.incr("counter", 10)
             
     def testPipeline(self):
         c1 = Client(MEMCACHED_ADDRESS)
