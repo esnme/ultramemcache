@@ -403,13 +403,37 @@ class Testumemcache(unittest.TestCase):
         for attr in ('sock', 'host', 'port'):
             self.assertRaises(TypeError, setattr, c, attr, 'booo')
 
-    def testPipeline(self):
+    def testPipelineIncrDecr(self):
         c1 = Client(MEMCACHED_ADDRESS)
         c2 = Client(MEMCACHED_ADDRESS)
         c1.connect()
         c2.connect()
 
-        c1.flush_all()
+        # Incr/Decr
+        c1.set("counter", "1")
+        self.assertEquals("1", c1.get("counter")[0])
+        c2.begin_pipeline()
+        c2.incr("counter", 10)
+        c2.decr("counter", 5)
+        self.assertEquals("1", c1.get("counter")[0])
+        c2.finish_pipeline()
+        self.assertEquals("6", c1.get("counter")[0])    
+            
+    def testPipelineOverflow(self):
+        c1 = Client(MEMCACHED_ADDRESS)
+        c2 = Client(MEMCACHED_ADDRESS)
+        c1.connect()
+        c2.connect()
+        c1.begin_pipeline()
+        
+        while True:
+            c1.incr("counter", 10)
+            
+    def testPipeline(self):
+        c1 = Client(MEMCACHED_ADDRESS)
+        c2 = Client(MEMCACHED_ADDRESS)
+        c1.connect()
+        c2.connect()
 
         # Basic Multi-Set
         c1.set("foo", "bar")
@@ -429,15 +453,7 @@ class Testumemcache(unittest.TestCase):
         c2.abort_pipeline()
         self.assertNotEqual("baz", c1.get("foo")[0])
 
-        # Incr/Decr
-        c1.set("counter", "1")
-        self.assertEquals("1", c1.get("counter")[0])
-        c2.begin_pipeline()
-        c2.incr("counter", 10)
-        c2.decr("counter", 5)
-        self.assertEquals("1", c1.get("counter")[0])
-        c2.finish_pipeline()
-        self.assertEquals("6", c1.get("counter")[0])
+
 
         # Add
         c1.set("added1", "foo")
