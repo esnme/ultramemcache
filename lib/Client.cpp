@@ -60,7 +60,7 @@ void Client::setError(const char *message)
 
 const char *Client::getError(void)
 {
-  return m_error;
+  return m_error.c_str();
 }
 
 bool Client::connect(const char *address, int port)

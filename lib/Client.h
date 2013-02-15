@@ -33,6 +33,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "mcdefs.h"
 #include "PacketWriter.h"
 #include "PacketReader.h"
+#include <string>
 
 typedef struct SOCKETDESC
 {
@@ -109,6 +110,6 @@ private:
   PacketWriter m_writer;
   PacketReader m_reader;
 
-  const char *m_error;
+  std::string m_error;
   int m_pipeline;
 };

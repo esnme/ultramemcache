@@ -66,7 +66,7 @@ finally:
 
 
 setup (name = 'umemcache',
-       version = "1.6.1",
+       version = "1.6.2",
        description = "Ultra fast memcache client written in highly optimized C++ with Python bindings",
        long_description = README,
        ext_modules = [module1],
