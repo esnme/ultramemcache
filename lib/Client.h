@@ -33,6 +33,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "mcdefs.h"
 #include "PacketWriter.h"
 #include "PacketReader.h"
+#include <string>
 
 typedef struct SOCKETDESC
 {
@@ -71,12 +72,6 @@ public:
   bool getFlush(void);
   bool getReadNext(char **key, size_t *cbKey, char **data, size_t *cbData, int *flags, UINT64 *cas, bool *bError);
 
-  bool pipelineBegin(void);
-  bool pipelineFlush(void);
-  bool pipelineAbort(void);
-  bool getNextPipelineResult(char **pData, size_t *cbSize);
-  bool isPipelined(void);
-
   bool set(const char *key, size_t cbKey, void *data, size_t cbData, time_t expiration, int flags, bool async, size_t maxSize);
   bool del(const char *key, size_t cbKey, time_t *expiration, bool async);
   bool add(const char *key, size_t cbKey, void *data, size_t cbData, time_t expiration, int flags, bool async, size_t maxSize);
@@ -100,7 +95,6 @@ private:
   bool command(const char *cmd, size_t cbCmd, const char *key, size_t cbKey, void *data, size_t cbData, time_t expiration, int flags, bool async, size_t maxSize);
   bool readLine(void);
   
-  void pipelineReset(void);
   void setError(const char *message);
   bool extractErrorFromReader(void);
 
@@ -109,6 +103,5 @@ private:
   PacketWriter m_writer;
   PacketReader m_reader;
 
-  const char *m_error;
-  int m_pipeline;
+  std::string m_error;
 };

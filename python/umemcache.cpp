@@ -366,7 +366,7 @@ PyObject *Client_command(PyClient *self, PFN_COMMAND cmd, PyObject *args)
     return NULL;
   }
 
-  if (!self->client->isPipelined() && !async)
+  if (!async)
   {
     if (self->client->getResult(&pResult, &cbResult))
     {
@@ -420,11 +420,6 @@ PyObject *Client_get(PyClient *self, PyObject *args)
   if (!PyArg_ParseTuple (args, "s#", &pKey, &cbKey))
   {
     return NULL;
-  }
-
-  if (self->client->isPipelined())
-  {
-    return PyErr_Format(umemcache_MemcachedError, "Operation cannot be performed inside a pipeline");
   }
 
   self->client->getBegin();
@@ -488,11 +483,6 @@ PyObject *Client_gets(PyClient *self, PyObject *args)
     return NULL;
   }
 
-  if (self->client->isPipelined())
-  {
-    return PyErr_Format(umemcache_MemcachedError, "Operation cannot be performed inside a pipeline");
-  }
-
   self->client->getsBegin();
 
   self->client->getKeyWrite(pKey, cbKey);
@@ -552,11 +542,6 @@ PyObject *Client_get_multi(PyClient *self, PyObject *okeys)
   size_t cbData;
   UINT64 cas;
   int flags;
-
-  if (self->client->isPipelined())
-  {
-    return PyErr_Format(umemcache_MemcachedError, "Operation cannot be performed inside a pipeline");
-  }
 
   self->client->getBegin();
 
@@ -639,11 +624,6 @@ PyObject *Client_gets_multi(PyClient *self, PyObject *okeys)
   UINT64 cas;
   int flags;
 
-  if (self->client->isPipelined())
-  {
-    return PyErr_Format(umemcache_MemcachedError, "Operation cannot be performed inside a pipeline");
-  }
-
   self->client->getsBegin();
 
   PyObject *iterator = PyObject_GetIter(okeys);
@@ -716,44 +696,6 @@ PyObject *Client_gets_multi(PyClient *self, PyObject *okeys)
   return odict;
 }
 
-PyObject *Client_begin_pipeline(PyClient *self, PyObject *args)
-{
-  if (!self->client->pipelineBegin())
-  {
-    return PyErr_Format(umemcache_MemcachedError, "pipeline already started");
-  }
-
-  Py_RETURN_NONE;
-}
-
-PyObject *Client_abort_pipeline(PyClient *self, PyObject *args)
-{
-  self->client->pipelineAbort();
-  Py_RETURN_NONE;
-}
-
-PyObject *Client_finish_pipeline(PyClient *self, PyObject *args)
-{
-  char *pResult;
-  size_t cbResult;
-
-  if (!self->client->pipelineFlush())
-  {
-    return PyErr_Format(umemcache_MemcachedError, "error flushing pipeline");
-  }
-
-  PyObject *oresults = PyList_New(0);
-
-  while (self->client->getNextPipelineResult(&pResult, &cbResult))
-  {
-    PyObject *oresult = PyString_FromStringAndSize(pResult, cbResult);
-    PyList_Append(oresults, oresult);
-    Py_DECREF(oresult);
-  }
-
-  return oresults;
-}
-
 PyObject *Client_delete(PyClient *self, PyObject *args)
 {
   char *pResult;
@@ -780,7 +722,7 @@ PyObject *Client_delete(PyClient *self, PyObject *args)
     return NULL;
   }
 
-  if (!self->client->isPipelined() && !async)
+  if (!async)
   {
     if (self->client->getResult(&pResult, &cbResult))
     {
@@ -827,7 +769,7 @@ PyObject *Client_cas(PyClient *self, PyObject *args)
     return NULL;
   }
 
-  if (!self->client->isPipelined() && !async)
+  if (!async)
   {
     if (self->client->getResult(&pResult, &cbResult))
     {
@@ -869,7 +811,7 @@ PyObject *Client_incr(PyClient *self, PyObject *args)
     return NULL;
   }
 
-  if (!self->client->isPipelined() && !async)
+  if (!async)
   {
     if (self->client->getResult(&pResult, &cbResult))
     {
@@ -917,7 +859,7 @@ PyObject *Client_decr(PyClient *self, PyObject *args)
     return NULL;
   }
 
-  if (!self->client->isPipelined() && !async)
+  if (!async)
   {
     if (self->client->getResult(&pResult, &cbResult))
     {
@@ -944,11 +886,6 @@ PyObject *Client_version(PyClient *self, PyObject *args)
   char *pVersion;
   size_t cbVersion;
 
-  if (self->client->isPipelined())
-  {
-    return PyErr_Format(umemcache_MemcachedError, "Operation cannot be performed inside a pipeline");
-  }
-
   if (!self->client->version(&pVersion, &cbVersion))
   {
     return PyErr_Format(umemcache_MemcachedError, "Could not retrieve version");
@@ -963,11 +900,6 @@ PyObject *Client_stats(PyClient *self, PyObject *args)
   char *pValue;
   size_t cbName;
   size_t cbValue;
-
-  if (self->client->isPipelined())
-  {
-    return PyErr_Format(umemcache_MemcachedError, "Operation cannot be performed inside a pipeline");
-  }
 
   if (!self->client->stats(NULL, 0))
   {
@@ -1011,7 +943,7 @@ PyObject *Client_flush_all(PyClient *self, PyObject *args)
     return NULL;
   }
 
-  if (!self->client->isPipelined() && !async)
+  if (!async)
   {
     if (self->client->getResult(&pResult, &cbResult))
     {
@@ -1112,9 +1044,6 @@ static PyMethodDef Client_methods[] = {
   {"flush_all", (PyCFunction)        Client_flush_all, METH_VARARGS, "def flush_all(self, expiration = 0, async = False)"},
   {"set_timeout", (PyCFunction)       Client_set_timeout, METH_VARARGS, "def set_timeout(self, value)"},
   {"get_timeout", (PyCFunction)       Client_get_timeout, METH_NOARGS, "def get_timeout(self)"},
-  {"begin_pipeline", (PyCFunction)       Client_begin_pipeline, METH_NOARGS, "def begin_pipeline(self)"},
-  {"abort_pipeline", (PyCFunction)       Client_abort_pipeline, METH_NOARGS, "def abort_pipeline(self)"},
-  {"finish_pipeline", (PyCFunction)      Client_finish_pipeline, METH_NOARGS, "def finish_pipeline(self)"},
   {NULL}
 };
 
