@@ -819,7 +819,7 @@ PyObject *Client_incr(PyClient *self, PyObject *args)
 
       if (strncmp (pResult, "CLIENT_ERROR", 12) == 0)
       {
-        return PyErr_Format(umemcache_MemcachedError, pResult);
+        return PyErr_Format(umemcache_MemcachedError, "%s", pResult);
       }
 
       return PyString_FromStringAndSize(pResult, cbResult);
@@ -867,7 +867,7 @@ PyObject *Client_decr(PyClient *self, PyObject *args)
 
       if (strncmp (pResult, "CLIENT_ERROR", 12) == 0)
       {
-        return PyErr_Format(umemcache_MemcachedError, pResult);
+        return PyErr_Format(umemcache_MemcachedError, "%s", pResult);
       }
 
       return PyString_FromStringAndSize(pResult, cbResult);
