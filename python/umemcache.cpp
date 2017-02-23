@@ -696,6 +696,50 @@ PyObject *Client_gets_multi(PyClient *self, PyObject *okeys)
   return odict;
 }
 
+
+PyObject *Client_touch(PyClient *self, PyObject *args)
+{
+    char *pResult;
+    size_t cbResult;
+    char *pKey;
+    size_t cbKey;
+    int expire = -1;
+    int async = 0;
+
+    if (!PyArg_ParseTuple (args, "s#|ib", &pKey, &cbKey, &expire, &async))
+    {
+	return NULL;
+    }
+
+    time_t tsExpire = expire;
+
+    if (!self->client->touch(pKey, cbKey, (tsExpire == -1) ? NULL : (time_t *) &tsExpire, async ? true : false))
+    {
+	if (!PyErr_Occurred())
+	{
+	    return PyErr_Format(umemcache_MemcachedError, "umemcache: %s", self->client->getError());
+	}
+
+	return NULL;
+    }
+
+    if (!async)
+    {
+	if (self->client->getResult(&pResult, &cbResult))
+	{
+	    return PyString_FromStringAndSize(pResult, cbResult);
+	}
+	else
+	{
+	    return PyErr_Format(umemcache_MemcachedError, "Could not retrieve result");
+	}
+    }
+
+    Py_RETURN_NONE;
+}
+
+
+
 PyObject *Client_delete(PyClient *self, PyObject *args)
 {
   char *pResult;
@@ -1035,6 +1079,7 @@ static PyMethodDef Client_methods[] = {
   {"replace", (PyCFunction)            Client_replace,            METH_VARARGS, "def replace(self, key, data, expiration = 0, flags = 0, async = False)"},
   {"append", (PyCFunction)            Client_append,            METH_VARARGS, "def append(self, key, data, expiration = 0, flags = 0, async = False)"},
   {"prepend", (PyCFunction)            Client_prepend,            METH_VARARGS, "def prepend(self, key, data, expiration = 0, flags = 0, async = False)"},
+  {"touch", (PyCFunction)            Client_touch,            METH_VARARGS, "def touch(self, key, expiration = 0, async = False)"},
   {"delete", (PyCFunction)            Client_delete,            METH_VARARGS, "def delete(self, key, expiration = 0, async = False)"},
   {"cas", (PyCFunction)            Client_cas,            METH_VARARGS, "def cas(self, key, data, cas_unique, expiration = 0, flags = 0, async = False)"},
   {"incr", (PyCFunction)            Client_incr,            METH_VARARGS, "def incr(self, key, increment, async = False)"},
@@ -1121,6 +1166,6 @@ PyMODINIT_FUNC
   PyModule_AddObject(m, "Client", (PyObject *)&ClientType);
 
   umemcache_MemcachedError = PyErr_NewException("umemcache.MemcachedError",
-      PyExc_RuntimeError, NULL); 
+      PyExc_RuntimeError, NULL);
   PyModule_AddObject(m, "MemcachedError", (PyObject *)umemcache_MemcachedError);
 }

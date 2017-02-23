@@ -74,6 +74,7 @@ public:
 
   bool set(const char *key, size_t cbKey, void *data, size_t cbData, time_t expiration, int flags, bool async, size_t maxSize);
   bool del(const char *key, size_t cbKey, time_t *expiration, bool async);
+  bool touch(const char *key, size_t cbKey, time_t *expiration, bool async);
   bool add(const char *key, size_t cbKey, void *data, size_t cbData, time_t expiration, int flags, bool async, size_t maxSize);
 
   bool replace(const char *key, size_t cbKey, void *data, size_t cbData, time_t expiration, int flags, bool async, size_t maxSize);
@@ -94,7 +95,7 @@ public:
 private:
   bool command(const char *cmd, size_t cbCmd, const char *key, size_t cbKey, void *data, size_t cbData, time_t expiration, int flags, bool async, size_t maxSize);
   bool readLine(void);
-  
+
   void setError(const char *message);
   bool extractErrorFromReader(void);
 

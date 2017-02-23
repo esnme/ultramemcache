@@ -35,10 +35,10 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <sstream>
 #include <string.h>
 
-//#define PRINTMARK() fprintf(stderr, "%s: MARK(%d)\n", __FILE__, __LINE__)		
-#define PRINTMARK() 		
+//#define PRINTMARK() fprintf(stderr, "%s: MARK(%d)\n", __FILE__, __LINE__)
+#define PRINTMARK()
 
-Client::Client (SOCKETDESC *sockdesc) 
+Client::Client (SOCKETDESC *sockdesc)
   :	m_writer (1024 * 1200)
   , m_reader (1024 * 1200)
 {
@@ -289,6 +289,36 @@ bool Client::prepend(const char *key, size_t cbKey, void *data, size_t cbData, t
   return command ("prepend", 7, key, cbKey, data, cbData, expiration, flags, async, maxSize);
 }
 
+bool Client::touch(const char *key, size_t cbKey, time_t *expiration, bool async)
+{
+    m_writer.writeChars("touch ", 6);
+    m_writer.writeChars(key, cbKey);
+    m_writer.writeChar(' ');
+    m_writer.writeNumeric(*expiration);
+    if (async)
+    {
+      m_writer.writeChars(" noreply", 8);
+    }
+    m_writer.writeChars("\r\n", 2);
+
+    if (!sendWriteBuffer())
+    {
+      return false;
+    }
+
+    if (async)
+    {
+      return true;
+    }
+
+    if (!readLine())
+    {
+      return false;
+    }
+
+    return true;
+}
+
 bool Client::del(const char *key, size_t cbKey, time_t *expiration, bool async)
 {
   m_writer.writeChars("delete ", 7);
@@ -432,7 +462,7 @@ bool Client::version(char **pVersion, size_t *cbVersion)
   if (m_reader.readBytes(8) == NULL)
   {
     return false;
-  }	
+  }
 
   *pVersion= (char *) m_reader.readUntil(cbVersion, '\r');
 
@@ -538,8 +568,8 @@ bool Client::extractErrorFromReader(void)
   static const size_t RESPONSE_CLIENT_ERROR_SIZE = strlen(RESPONSE_CLIENT_ERROR);
   static const size_t RESPONSE_SERVER_ERROR_SIZE = strlen(RESPONSE_SERVER_ERROR);
 
-  if (m_reader.beginsWithString(RESPONSE_ERROR, RESPONSE_ERROR_SIZE) || 
-      m_reader.beginsWithString(RESPONSE_CLIENT_ERROR, RESPONSE_CLIENT_ERROR_SIZE) || 
+  if (m_reader.beginsWithString(RESPONSE_ERROR, RESPONSE_ERROR_SIZE) ||
+      m_reader.beginsWithString(RESPONSE_CLIENT_ERROR, RESPONSE_CLIENT_ERROR_SIZE) ||
       m_reader.beginsWithString(RESPONSE_SERVER_ERROR, RESPONSE_SERVER_ERROR_SIZE))
   {
     size_t cbError = 0;
@@ -590,10 +620,10 @@ bool Client::getReadNext(char **key, size_t *cbKey, char **data, size_t *cbData,
   {
     *bError = true;
     setError("malformed response: expected VALUE");
-    m_reader.skip();  
+    m_reader.skip();
     return false;
   }
-  
+
   *key = (char *) m_reader.readUntil(cbKey, ' ');
 
   if (*key == NULL)
