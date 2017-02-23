@@ -48,7 +48,7 @@ PacketWriter::PacketWriter(size_t _cbSize)
 
 PacketWriter::~PacketWriter(void)
 {
-  delete m_buffStart;
+  delete[] m_buffStart;
 }
 
 // Push/increment write cursor
