@@ -38,9 +38,9 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 //#define PRINTMARK() fprintf(stderr, "%s: MARK(%d)\n", __FILE__, __LINE__)		
 #define PRINTMARK() 		
 
-Client::Client (SOCKETDESC *sockdesc) 
-  :	m_writer (1024 * 1200)
-  , m_reader (1024 * 1200)
+Client::Client (SOCKETDESC *sockdesc, size_t maxSize) 
+  :	m_writer (maxSize)
+  , m_reader (maxSize)
 {
   m_sock = sockdesc;
 }

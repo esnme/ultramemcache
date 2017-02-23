@@ -59,7 +59,7 @@ public:
 public:
 
 
-  Client (SOCKETDESC *sockdesc);
+  Client (SOCKETDESC *sockdesc, size_t maxSize);
   ~Client (void);
   bool connect(const char *address, int port);
   bool isConnected(void);
