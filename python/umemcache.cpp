@@ -285,7 +285,7 @@ int Client_init(PyClient *self, PyObject *args, PyObject *kwargs)
   self->desc.recv = API_recv;
   self->desc.send = API_send;
   PRINTMARK();
-  self->client = new Client(&self->desc);
+  self->client = new Client(&self->desc, self->maxSize);
   PRINTMARK();
 
   return 0;
